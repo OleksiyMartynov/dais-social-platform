@@ -1,9 +1,13 @@
 pragma solidity ^0.5.8;
 import "./Timed.sol";
 import "./Restricted.sol";
-
 import "./Ownable.sol";
 
+/**
+ * @dev Class for starting polls, voting on polls, and finishing polls
+ *
+ * Inherits behaviours of {Timed} and {Restricted} classes
+ */
 contract VoteStation is Timed, Restricted {
     uint  private  VOTE_DURATION;
     mapping(uint=>VoteData)  private  voteDataMap; // maps voteId to VoteData
@@ -15,9 +19,20 @@ contract VoteStation is Timed, Restricted {
         uint forTotal;
         uint againstTotal;
     }
+    /**
+     * @dev Initialized with value for length of poll duration
+     */
     constructor (uint _voteDuration) public {
         VOTE_DURATION = _voteDuration;
     }
+
+    /**
+     * @dev Starts a unique poll
+     *
+     * Requirements:
+     *
+     * - caller must be granted permission to call this function.
+     */
     function startVote()
         public
         payable
@@ -29,6 +44,17 @@ contract VoteStation is Timed, Restricted {
         data.startTime = block.timestamp;
         return voteCount;
     }
+
+    /**
+     * @dev Records a vote for a specific vote id `_voteId` where votes are equal to the transaction value
+     *
+     * Requirements:
+     *
+     * - caller must be granted permission to call this function.
+     * - current time must be before poll period end
+     * - `_voter` address can only vote once, and then cannot change their vote
+     * - `_voteId` must be valid poll id
+     */
     function vote(uint _voteId, bool voteFor, address _voter)
         public
         payable
@@ -47,6 +73,16 @@ contract VoteStation is Timed, Restricted {
             data.votedFor[_voter] = false;
         }
     }
+
+    /**
+     * @dev Allows voter to withdraw their locked funds used for voting
+     *
+     * Requirements:
+     *
+     * - caller must be granted permission to call this function.
+     * - current time must ne after poll period end
+     * - `_voteId` must be valid poll id
+     */
     function returnFunds(uint _voteId, address payable _voter)
         public
         payable
@@ -59,7 +95,9 @@ contract VoteStation is Timed, Restricted {
         data.lockedAmounts[_voter] = 0;
         _voter.transfer(amount);
     }
-
+    /**
+     * @dev Returns vote details for poll id `_voteId`
+     */
     function getVoteDetail(uint _voteId)
         public
         view
@@ -80,6 +118,10 @@ contract VoteStation is Timed, Restricted {
             againstTotal = data.againstTotal;
         }
     }
+
+    /**
+     * @dev Return vote details for voter `_voter` address for poll id `_voteId`
+     */
     function getVoterDetail(uint _voteId, address _voter)
         public
         view
@@ -106,10 +148,16 @@ contract VoteStation is Timed, Restricted {
         lockedAmount = data.lockedAmounts[_voter];
     }
 
+    /**
+     * @dev Returns poll duration
+     */
     function getVoteDuration() public view returns(uint duration){
         duration = VOTE_DURATION;
     }
 
+    /**
+     * @dev Returns total number of polls started
+     */
     function getCount() public view returns(uint count){
         count = voteCount;
     }

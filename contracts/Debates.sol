@@ -5,6 +5,11 @@ import "./BaseTCR.sol";
 import "./Utils.sol";
 import "./Tags.sol";
 
+/**
+ * @dev Class for adding user debates to the Debate TCR.
+ * Debate TCR can grow indefinitely as the users approve Debate proposals
+ * Inherits behaviours from {BaseTCR}
+ */
 contract Debates is BaseTCR {
     uint[] private  acceptedIds;
     uint[] private  rejectedIds;
@@ -24,8 +29,19 @@ contract Debates is BaseTCR {
         uint id;
         uint index;
     }
+
+    /**
+     * @dev Sets the address of the settings contract
+     */
     constructor (address _settingsContract) BaseTCR( _settingsContract) public {
     }
+
+    /**
+     * @dev Starts voting period for proposed debate topic
+     *
+     * Restrictions:
+     * - creator must provide a stake
+     */
     function create(string memory _ipfsHash, string memory tag1, string memory tag2, string memory tag3) public payable returns(uint){
         require(msg.value>0,"Creating a debate requires a stake");
         VoteStation voteStation = VoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_DEBATES")); //consider custom vote duration
@@ -43,6 +59,14 @@ contract Debates is BaseTCR {
         pendingDebatesMap[voteId] = PendingDebateData(voteId, pendingIds.length-1);
         return voteId;
     }
+
+    /**
+     * @dev Users vote on a specific debate id to add to TCR or reject
+     *
+     * Restrictions:
+     * - votes must lock funds to vote
+     * - `_id` must be a valid debate id
+     */
     function vote(uint _id, bool _vote) public payable{
         require(msg.value>0,"Voting requires funds to lock");
         VoteStation voteStation = VoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_DEBATES"));
@@ -51,6 +75,13 @@ contract Debates is BaseTCR {
         voteStation.vote.value(msg.value)(_id, _vote, msg.sender);
         debate.voterLockedAmounts[msg.sender] = msg.value;
     }
+
+    /**
+     * @dev Users withdraw funds used for voting on specific debate `_id`
+     *
+     * Restrictions:
+     * - `_id` must be a valid debate id
+     */
     function returnVoteFundsAndReward(uint _id) public {
         VoteStation voteStation = VoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_DEBATES"));
         voteStation.returnFunds(_id, msg.sender);
@@ -71,6 +102,14 @@ contract Debates is BaseTCR {
             }
         }
     }
+
+    /**
+     * @dev Rewards and/or punishes debate creators for specific debate `_id`
+     *
+     * Restrictions:
+     * - Called once per debate that completed the voting period
+     *
+     */
     function settleCreatorAmounts(uint _id) public {
         //if first time function called since vote end and debate creator was not rewarder/punished yet
         VoteStation voteStation = VoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_DEBATES"));
@@ -93,6 +132,9 @@ contract Debates is BaseTCR {
         }
     }
 
+    /**
+     * @dev Returns debate details
+     */
     function getDebateDetails(uint _id)
         public
         view
@@ -114,6 +156,10 @@ contract Debates is BaseTCR {
         tag2 = debate.tags[1];
         tag3 = debate.tags[2];
     }
+
+    /**
+     * @dev Returns all debates in the Debate TCR
+     */
     function getAcceptedDebateIds(uint cursor, uint pageSize)
         public
         view
@@ -121,6 +167,10 @@ contract Debates is BaseTCR {
     {
         return Utils.getPage(acceptedIds, cursor, pageSize);
     }
+
+    /**
+     * @dev Returns all debates rejected by users
+     */
     function getRejectedDebateIds(uint cursor, uint pageSize)
         public
         view
@@ -128,6 +178,10 @@ contract Debates is BaseTCR {
     {
         return Utils.getPage(rejectedIds, cursor, pageSize);
     }
+
+    /**
+     * @dev Returns all debates pending votes
+     */
     function getPendingDebateIds(uint cursor, uint pageSize)
         public
         view
@@ -135,6 +189,10 @@ contract Debates is BaseTCR {
     {
         return Utils.getPage(pendingIds, cursor, pageSize);
     }
+
+    /**
+     * @dev Returns all debates either accepted or rejected
+     */
     function getAllDebateIds(bool accepted)
         public
         view
@@ -146,6 +204,10 @@ contract Debates is BaseTCR {
             values = rejectedIds;
         }
     }
+
+    /**
+     * @dev Returns count of all debates either accepted or rejected
+     */
     function getDebateCount(bool accepted)
         public
         view
@@ -157,6 +219,10 @@ contract Debates is BaseTCR {
             count = rejectedIds.length;
         }
     }
+
+    /**
+     * @dev Called once firs opinion is accepted under this debate. Pays out reward.
+     */
     function onFirstOpinionAccepted(uint _id, address payable _creator, uint rewardNumerator, uint rewardDenominator)
         public
         onlyStatic(settings.getAddressValue("KEY_ADDRESS_OPINIONS"))
@@ -167,6 +233,10 @@ contract Debates is BaseTCR {
             _creator.transfer(debate.stake * rewardNumerator / rewardDenominator);
         }
     }
+
+    /**
+     * @dev Utility function to clear pending debate list
+     */
     function removePending(PendingDebateData memory item) private {
         require(item.index < pendingIds.length, "Invalid pending debate index");
         uint last = pendingIds[pendingIds.length-1];

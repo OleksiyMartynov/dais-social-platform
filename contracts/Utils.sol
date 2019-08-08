@@ -1,6 +1,14 @@
 pragma solidity ^0.5.8;
-
+/**
+ * @dev Library class providing various utility functions
+ */
 library Utils {
+    /**
+     * @dev Splits int[] `array` into pages with offset of `cursor` and length of `pageSize`
+     *
+     * Returns int[]
+     *
+     */
     function getPage(uint[] storage array, uint cursor, uint pageSize)
         internal
         view
@@ -18,6 +26,12 @@ library Utils {
 
         return (values, cursor + length);
     }
+    /**
+     * @dev Splits string[] `array` into pages with offset of `cursor` and length of `pageSize`
+     *
+     * Returns string[]
+     *
+     */
     function getPageStrings(string[] storage array, uint cursor, uint pageSize)
         internal
         view
@@ -35,6 +49,9 @@ library Utils {
 
         return (values, cursor + length);
     }
+    /**
+     * @dev Checks if first character of a string `str` equals `car`
+     */
     function stringStartsWith(string memory str, bytes1 char)
         internal
         pure
@@ -43,6 +60,9 @@ library Utils {
         bytes memory raw = bytes(str);
         return raw[0] == char;
     }
+    /**
+     * @dev Returns count of characters in an UTF string `str`
+     */
     function utfStringLength(string memory str)
         internal
         pure

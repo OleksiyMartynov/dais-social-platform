@@ -1,6 +1,8 @@
 pragma solidity ^0.5.8;
 import "./Ownable.sol";
-
+/**
+ * @dev Settings class providing storage for key value pairs of various types
+ */
 contract Settings is Ownable{
     mapping(string => uint) internal valuesMapping; //mapping key to value
     mapping(string => address) internal addressMapping; //mapping key to address

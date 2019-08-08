@@ -5,11 +5,27 @@ import "./Utils.sol";
 import "./Settings.sol";
 import "./Configurable.sol";
 
+/**
+ * @dev Class responsible for managing a list of string tags mapped to int ids
+ * Inherits behaviours from {Restricted} and {Configurable}
+ */
 contract Tags is Restricted, Configurable {
     mapping(bytes32 => uint[]) private tagMapping; //mapping of hash of tag string to array of ids
+
+    /**
+     * @dev Sets the address of the settings contract
+     */
     constructor (address _settingsContract) public {
         updateSettings(_settingsContract);
     }
+
+    /**
+     * @dev Saves tag for a specific id `id`
+     *
+     * Restrictions:
+     * - must meet length requirements
+     * - must not start with #
+     */
     function addIdWithTag(string memory tag, uint id)
         public
         onlyStatic(settings.getAddressValue("KEY_ADDRESS_DEBATES"))
@@ -20,6 +36,10 @@ contract Tags is Restricted, Configurable {
         uint[] storage tags = tagMapping[keccak256(abi.encode(tag))];
         tags.push(id);
     }
+
+    /**
+     * @dev Returns ids referenced by this tag
+     */
     function getIdsForTag(string memory tag, uint cursor, uint pageSize)
         public
         view
@@ -27,6 +47,10 @@ contract Tags is Restricted, Configurable {
     {
         return Utils.getPage(tagMapping[keccak256(abi.encode(tag))], cursor, pageSize);
     }
+
+    /**
+     * @dev Returns count of ids referenced by this tag
+     */
     function getIdsCountForTag(string memory tag)
         public
         view

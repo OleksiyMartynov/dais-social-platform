@@ -1,10 +1,14 @@
 pragma solidity ^0.5.8;
 
 import "./VoteStation.sol";
-
 import "./BaseTCR.sol";
 import "./Debates.sol";
 
+/**
+* @dev Class for adding user opinions to the Opinion TCR
+* Opinion TCR is a single item list for each accepted Debate into the Debate TCR
+* Inherits behaviours from {BaseTCR}
+*/
 contract Opinions is BaseTCR  {
     enum OpinionState {NULL, PENDING_VOTE, VOTE_REJECTED, TOP, OLD_TOP}
     mapping(uint=>OpinionsRegistry) private  opinionsRegistryMap; //mapping of debateId to opinion registry data
@@ -24,8 +28,21 @@ contract Opinions is BaseTCR  {
         mapping (address => uint) voterLockedAmounts;
         bool paidRewardOrPunishment;
     }
-    constructor (address _settingsContract) BaseTCR(_settingsContract) public {
-    }
+
+    /**
+     * @dev Sets the address of the settings contract
+     */
+    constructor (address _settingsContract) BaseTCR(_settingsContract) public {}
+
+    /**
+     * @dev Starts voting period for proposed opinion
+     *
+     * Restrictions:
+     * - creator must provide a stake
+     * - `_debateId` must be accepted to the Debate TCR
+     * - no ongoing voted should exist for this debate `_debateId`
+     * - creator must provide a stake larger than the previous top opinion
+     */
     function create(uint _debateId, string memory _ipfsHash) public payable returns(uint){
         //todo investigate if previous opinion is settled for this debate
         require(msg.value>0,"Creating an opinion requires a stake");
@@ -56,6 +73,14 @@ contract Opinions is BaseTCR  {
         opinion.state = OpinionState.PENDING_VOTE;
         return voteId;
     }
+
+    /**
+     * @dev Users vote on specific opinion `_id`, to add to TCR or reject
+     *
+     * Restrictions:
+     * - User must lock funds to vote
+     * - `_id` must be a valid ipinion id
+     */
     function vote(uint _id, bool _vote) public payable{
         require(msg.value>0,"Voting requires funds to lock");
         VoteStation voteStation = VoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_OPINIONS"));
@@ -64,6 +89,14 @@ contract Opinions is BaseTCR  {
         voteStation.vote.value(msg.value)(_id, _vote, msg.sender);
         opinion.voterLockedAmounts[msg.sender] = msg.value;
     }
+
+    /**
+     * @dev Users withdraw funds used for voting on specific opinion `_id`
+     *
+     * Restrictions:
+     * - `_id` must be a valid opinion id
+     *
+     */
     function returnVoteFundsAndReward(uint _id) public {
         VoteStation voteStation = VoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_OPINIONS"));
         voteStation.returnFunds(_id, msg.sender);
@@ -87,6 +120,13 @@ contract Opinions is BaseTCR  {
         }
     }
 
+    /**
+     * @dev Rewards and/or punishes opinion creators for specific opinion `_id`
+     *
+     * Restrictions:
+     * - Called once per opinion that completed the voting period
+     *
+     */
     function settleCreatorAmounts(uint _id) public {
         VoteStation voteStation = VoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_OPINIONS"));
         voteStation.returnFunds(_id, msg.sender);
@@ -137,9 +177,14 @@ contract Opinions is BaseTCR  {
                 }
                 loserStake = opinion.stake;
             }
+            //todo: fix/update unit tests for calling function bellow
             //settleOthers(loserStake, debateCreator, prevTopOpinion);
         }
     }
+
+    /**
+     * @dev Rewards platform stakeholders and debate creator with fees earned from opinion battle
+     */
     function settleOthers(uint loserStake, address debateCreator, Opinion memory prevTopOpinion) private{
         //payout remaining amounts to devs and debate creators
         // debate creator reward + dev fee + majority voter reward + winning opinion reward = 100% losers stake
@@ -153,6 +198,10 @@ contract Opinions is BaseTCR  {
         address payable payableDebateCreator = address(uint160(debateCreator));
         payableDebateCreator.transfer(prevTopOpinion.stake * debateCreatorRewardNumerator / debateCreatorRewardDenominator);
     }
+
+    /**
+     * @dev Returns details for specific opinion `_id`
+     */
     function getOpinionDetails(uint _id)
         public
         view
@@ -172,6 +221,10 @@ contract Opinions is BaseTCR  {
         voterLockedAmount = opinion.voterLockedAmounts[msg.sender];
         paidRewardOrPunishment = opinion.paidRewardOrPunishment;
     }
+
+    /**
+     * @dev Returns opinion registry details for specific debate `_id`
+     */
     function getOpinionRegistryDetails(uint _debateId)
         public
         view
