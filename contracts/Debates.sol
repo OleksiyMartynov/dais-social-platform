@@ -221,7 +221,7 @@ contract Debates is BaseTCR {
     }
 
     /**
-     * @dev Called once firs opinion is accepted under this debate. Pays out reward.
+     * @dev Called once first opinion is accepted under this debate. Pays out reward.
      */
     function onFirstOpinionAccepted(uint _id, address payable _creator, uint rewardNumerator, uint rewardDenominator)
         public

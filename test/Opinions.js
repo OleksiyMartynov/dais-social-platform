@@ -409,6 +409,7 @@ contract("Opinions", accounts => {
         await waitFor(VOTE_DURATION * 1000 + 2000);
         let voterRewardFraction = CONTRACT_FRACTIONS.OPINION_MAJORITY_VOTER_REWARD_NUMERATOR / CONTRACT_FRACTIONS.OPINION_MAJORITY_VOTER_REWARD_DENOMINATOR;
         let opinionCreatorRewardFraction = CONTRACT_FRACTIONS.OPINION_CREATOR_REWARD_NUMERATOR / CONTRACT_FRACTIONS.OPINION_CREATOR_REWARD_DENOMINATOR;
+        let debateCreatorRewardFraction = CONTRACT_FRACTIONS.DEBATE_CREATOR_REWARD_NUMERATOR / CONTRACT_FRACTIONS.DEBATE_CREATOR_REWARD_DENOMINATOR;
         //check reward punishment
         let initialOpinionCreatorBalance = new BN(await web3.eth.getBalance(MOCK_OPINION_CREATOR_2));
         let initialVoterBalance = new BN(await web3.eth.getBalance(MOCK_VOTER_1));
@@ -420,13 +421,11 @@ contract("Opinions", accounts => {
         let finalDebateCreatorBalance = new BN(await web3.eth.getBalance(creator));
         let rewardVoter = MOCK_OPINION_CREATOR_2_STAKE * voterRewardFraction;
         let rewardOpinionCreator = MOCK_OPINION_CREATOR_1_STAKE * opinionCreatorRewardFraction;
+        let rewardDebateCreator = MOCK_OPINION_CREATOR_1_STAKE * debateCreatorRewardFraction;
         assert.equal(initialOpinionCreatorBalance.add(new BN(rewardOpinionCreator)).toString(), finalOpinionCreatorBalance.toString(), "Second opinion creator did not get correct reward");
-        assert.equal(initialDebateCreatorBalance.toString(), finalDebateCreatorBalance.toString(), "Debate creators balances did not match");
+        assert.equal(initialDebateCreatorBalance.add(new BN(rewardDebateCreator)).toString(), finalDebateCreatorBalance.toString(), "Debate creators did not receive expected reward");
         assert.equal(initialVoterBalance.add(new BN(voteAmount)).add(new BN(rewardVoter)).sub(new BN(gasCost)).toString(), finalVoterBalance.toString(), "Voter did not get correct reward");
         
     })
-    //todo update transfer asserts after dev + debate-crator fees added
-    //todo test debate creator reward fee transfer
-    //todo test dev fee transfer
-    //todo test case where new opinion voting starts and old opinion no one called "tryRewardOrPunish"
+    //todo test case where new opinion voting starts and old opinion no one called "settleCreatorAmounts"
 })

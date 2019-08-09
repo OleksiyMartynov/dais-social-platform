@@ -44,13 +44,16 @@ contract Opinions is BaseTCR  {
      * - creator must provide a stake larger than the previous top opinion
      */
     function create(uint _debateId, string memory _ipfsHash) public payable returns(uint){
-        //todo investigate if previous opinion is settled for this debate
+        OpinionsRegistry storage opinionRegistry = opinionsRegistryMap[_debateId];
+        //settle any pending opinion
+        if(opinionRegistry.challangingOpinionId!=0){
+            settleCreatorAmounts(opinionRegistry.challangingOpinionId);
+        }
         require(msg.value>0,"Creating an opinion requires a stake");
         //check debateId is of debate thats approved
         VoteStation voteStation = VoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_OPINIONS")); //consider custom vote duration
         (, , , , , bool majorityAccepted, , , ) = voteStation.getVoterDetail(_debateId, msg.sender);
         require(majorityAccepted, "Debate needs to be accepted by majority");
-        OpinionsRegistry storage opinionRegistry = opinionsRegistryMap[_debateId];
         //check if no current opinions pending votes
         require(opinionRegistry.challangingOpinionId == 0, "Existing opinion pending votes");
         //if first opinion under this debate check if msg.value is greater then 1/2 debate stake
@@ -177,8 +180,7 @@ contract Opinions is BaseTCR  {
                 }
                 loserStake = opinion.stake;
             }
-            //todo: fix/update unit tests for calling function bellow
-            //settleOthers(loserStake, debateCreator, prevTopOpinion);
+            settleOthers(loserStake, debateCreator, prevTopOpinion);
         }
     }
 
