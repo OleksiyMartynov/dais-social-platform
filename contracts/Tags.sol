@@ -1,9 +1,9 @@
 pragma solidity ^0.5.8;
 
-import "./Restricted.sol";
-import "./Utils.sol";
+import "./Utils/Restricted.sol";
+import "./Utils/Utils.sol";
 import "./Settings.sol";
-import "./Configurable.sol";
+import "./Utils/Configurable.sol";
 
 /**
  * @dev Class responsible for managing a list of string tags mapped to int ids

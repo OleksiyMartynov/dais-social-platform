@@ -1,7 +1,7 @@
 pragma solidity ^0.5.8;
-import "./Timed.sol";
-import "./Restricted.sol";
-import "./Ownable.sol";
+import "./Utils/Timed.sol";
+import "./Utils/Restricted.sol";
+import "./Utils/Ownable.sol";
 
 /**
  * @dev Class for starting polls, voting on polls, and finishing polls

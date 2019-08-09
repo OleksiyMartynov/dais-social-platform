@@ -2,7 +2,7 @@ pragma solidity ^0.5.8;
 
 import "./VoteStation.sol";
 import "./BaseTCR.sol";
-import "./Utils.sol";
+import "./Utils/Utils.sol";
 import "./Tags.sol";
 
 /**

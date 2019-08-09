@@ -1,8 +1,8 @@
 pragma solidity ^0.5.8;
 
 import "./VoteStation.sol";
-import "./Ownable.sol";
-import "./Configurable.sol";
+import "./Utils/Ownable.sol";
+import "./Utils/Configurable.sol";
 /**
  * @dev Base class for implementing token curated registries that use a native token for voting.
  *

@@ -1,6 +1,6 @@
 pragma solidity ^0.5.8;
 
-import "./Settings.sol";
+import "../Settings.sol";
 import "./Ownable.sol";
 
 /**

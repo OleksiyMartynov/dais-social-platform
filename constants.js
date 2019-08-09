@@ -26,7 +26,15 @@ const CONTRACT_FRACTIONS = {
     OPINION_DEV_REWARD_DENOMINATOR: 1000
 }
 
+//FYI token constants
+const TOKEN_SYMBOL = "FYI";
+const TOKEN_NAME = "FYI"
+const TOKEN_RESERVE_RATIO = 500000;// Out of 1 million
+
 module.exports = {
+    TOKEN_SYMBOL,
+    TOKEN_NAME,
+    TOKEN_RESERVE_RATIO,
     VOTE_DURATION,
     MIN_TAG_LENGTH,
     MAX_TAG_LENGTH,

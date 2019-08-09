@@ -387,7 +387,7 @@ contract("Opinions", accounts => {
         let voterReward = MOCK_OPINION_CREATOR_2_STAKE * voterRewardFraction;
         let debateCreatorReward = MOCK_OPINION_CREATOR_2_STAKE * debateCreatorRewardFraction;
         assert.equal(initialVoterBalance.add(new BN(voteAmount)).add(new BN(voterReward)).sub(new BN(gasCost)).toString(), finalVoterBalance.toString(), "Voter did not get correct reward");
-        assert.equal(initialDebateCreatorBalance.add(new BN(debateCreatorReward)).toString(), finalDebateCreatorBalance.toString(), "Top opinion did not get correct reward");
+        assert.equal(initialDebateCreatorBalance.add(new BN(debateCreatorReward)).toString(), finalDebateCreatorBalance.toString(), "Debate creator did not get correct reward");
     })
     it("should reward second opinion creator correctly if second proposed opinion is accepted", async () => {
         let meta = await Opinions.deployed();

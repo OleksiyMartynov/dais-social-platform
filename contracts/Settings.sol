@@ -1,5 +1,5 @@
 pragma solidity ^0.5.8;
-import "./Ownable.sol";
+import "./Utils/Ownable.sol";
 /**
  * @dev Settings class providing storage for key value pairs of various types
  */
