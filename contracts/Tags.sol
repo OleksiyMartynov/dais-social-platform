@@ -35,6 +35,7 @@ contract Tags is Restricted, Configurable {
         require(!Utils.stringStartsWith(tag, 0x23), "Tag cannot start with #");
         uint[] storage tags = tagMapping[keccak256(abi.encode(tag))];
         tags.push(id);
+        emit TagSaved(tag, id);
     }
 
     /**
@@ -58,4 +59,9 @@ contract Tags is Restricted, Configurable {
     {
         return tagMapping[keccak256(abi.encode(tag))].length;
     }
+
+    /**
+     * @dev Emitted when a new tag is saved.
+     */
+    event TagSaved(string indexed tag, uint indexed id);
 }

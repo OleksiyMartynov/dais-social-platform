@@ -57,6 +57,7 @@ contract Debates is BaseTCR {
         tags.addIdWithTag(tag3, voteId);
         pendingIds.push(voteId);
         pendingDebatesMap[voteId] = PendingDebateData(voteId, pendingIds.length-1);
+        emit DebateCreated(voteId);
         return voteId;
     }
 
@@ -74,6 +75,7 @@ contract Debates is BaseTCR {
         require(debate.stake>0, "Invalid debate id");
         voteStation.vote.value(msg.value)(_id, _vote, msg.sender);
         debate.voterLockedAmounts[msg.sender] = msg.value;
+        emit DebateVote(_id, _vote, msg.sender);
     }
 
     /**
@@ -89,18 +91,22 @@ contract Debates is BaseTCR {
         Debate storage debate = debatesMap[_id];
         require(debate.stake>0, "Invalid debate id");
         settleCreatorAmounts(_id);
-
+        uint reward = 0;
         if(isInMajority){
             uint amount = debate.voterLockedAmounts[msg.sender];
             debate.voterLockedAmounts[msg.sender] = 0;
             uint rewardNumerator = settings.getIntValue("DEBATE_MAJORITY_VOTER_REWARD_NUMERATOR");
             uint rewardDenominator = settings.getIntValue("DEBATE_MAJORITY_VOTER_REWARD_DENOMINATOR");
+            uint total = 0;
             if(majorityAccepted){
-                msg.sender.transfer(debate.stake * rewardNumerator / rewardDenominator * amount / forTotal);
+                total = forTotal;
             }else{
-                msg.sender.transfer(debate.stake * rewardNumerator / rewardDenominator * amount / againstTotal);
+                total = againstTotal;
             }
+            reward = debate.stake * rewardNumerator / rewardDenominator * amount / total;
+            msg.sender.transfer(reward);
         }
+        emit DebateVoteRefund(_id, msg.sender, reward, majorityAccepted);
     }
 
     /**
@@ -123,8 +129,9 @@ contract Debates is BaseTCR {
                 uint punishmentNumerator = settings.getIntValue("DEBATE_CREATOR_PUNISHMENT_NUMERATOR");
                 uint punishmentDenominator = settings.getIntValue("DEBATE_CREATOR_PUNISHMENT_DENOMINATOR");
                 rejectedIds.push(_id);
-                address payable owner = address(uint160(owner()));
-                owner.transfer(debate.stake * punishmentNumerator / punishmentDenominator);
+                uint amount = debate.stake * punishmentNumerator / punishmentDenominator;
+                (address(uint160(owner()))).transfer(amount);
+                emit DebateDevFeePaid(_id, owner(), amount);
             }else{
                 acceptedIds.push(_id);
             }
@@ -132,6 +139,21 @@ contract Debates is BaseTCR {
         }
     }
 
+    /**
+     * @dev Called once first opinion is accepted under this debate. Pays out reward.
+     */
+    function onFirstOpinionAccepted(uint _id, uint _opinionId, address payable _creator, uint rewardNumerator, uint rewardDenominator)
+        public
+        onlyStatic(settings.getAddressValue("KEY_ADDRESS_OPINIONS"))
+    {
+        Debate storage debate = debatesMap[_id];
+        if(!debate.paidFirstOpinionCreator){
+            debate.paidFirstOpinionCreator = true;
+            uint amount = debate.stake * rewardNumerator / rewardDenominator;
+            _creator.transfer(amount);
+            emit FirstOpinionAccepted(_id, _opinionId, _creator, amount);
+        }
+    }
     /**
      * @dev Returns debate details
      */
@@ -219,21 +241,6 @@ contract Debates is BaseTCR {
             count = rejectedIds.length;
         }
     }
-
-    /**
-     * @dev Called once first opinion is accepted under this debate. Pays out reward.
-     */
-    function onFirstOpinionAccepted(uint _id, address payable _creator, uint rewardNumerator, uint rewardDenominator)
-        public
-        onlyStatic(settings.getAddressValue("KEY_ADDRESS_OPINIONS"))
-    {
-        Debate storage debate = debatesMap[_id];
-        if(!debate.paidFirstOpinionCreator){
-            debate.paidFirstOpinionCreator = true;
-            _creator.transfer(debate.stake * rewardNumerator / rewardDenominator);
-        }
-    }
-
     /**
      * @dev Utility function to clear pending debate list
      */
@@ -246,4 +253,25 @@ contract Debates is BaseTCR {
         delete pendingIds[pendingIds.length-1];
         pendingIds.length--;
     }
+    /**
+     * @dev Emitted when a new challanging debate is created.
+     */
+    event DebateCreated(uint indexed debateId);
+    /**
+     * @dev Emitted when a new vote for debate is submitted.
+     */
+    event DebateVote(uint indexed debateId, bool vote, address indexed voter);
+    /**
+     * @dev Emitted when the debate vote period completed and the address withdrew the funds
+     * locked for voting.
+     */
+    event DebateVoteRefund(uint indexed debateId, address indexed voter, uint amount, bool isMajority);
+    /**
+     * @dev Emitted when a dev fee is payed
+     */
+    event DebateDevFeePaid(uint indexed debateId, address devAddress, uint amount);
+    /**
+     * @dev Emitted when a first opinion is accepted for a debate
+     */
+    event FirstOpinionAccepted(uint indexed debateId, uint indexed opinionId, address creator, uint amount);
 }

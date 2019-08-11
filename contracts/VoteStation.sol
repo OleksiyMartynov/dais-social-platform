@@ -42,6 +42,7 @@ contract VoteStation is Timed, Restricted {
         voteCount += 1;
         VoteData storage data = voteDataMap[voteCount];
         data.startTime = block.timestamp;
+        emit VotingStarted(voteCount);
         return voteCount;
     }
 
@@ -72,6 +73,7 @@ contract VoteStation is Timed, Restricted {
             data.againstTotal += msg.value;
             data.votedFor[_voter] = false;
         }
+        emit Vote(_voteId, voteFor, _voter);
     }
 
     /**
@@ -94,6 +96,7 @@ contract VoteStation is Timed, Restricted {
         uint amount = data.lockedAmounts[_voter];
         data.lockedAmounts[_voter] = 0;
         _voter.transfer(amount);
+        emit VoteRefund(_voteId, _voter);
     }
     /**
      * @dev Returns vote details for poll id `_voteId`
@@ -161,5 +164,21 @@ contract VoteStation is Timed, Restricted {
     function getCount() public view returns(uint count){
         count = voteCount;
     }
+
+    /**
+     * @dev Emitted when a new voting begins.
+     */
+    event VotingStarted(uint indexed voteId);
+
+    /**
+     * @dev Emitted when an address submits a vote. `voteFor` is the addresses vote.
+     */
+    event Vote(uint indexed voteId, bool voteFor, address indexed voter);
+
+    /**
+     * @dev Emitted when the vote period completed and the address withdrew the funds
+     * locked for voting.
+     */
+    event VoteRefund(uint indexed voteId, address indexed voter);
 
 }
