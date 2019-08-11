@@ -51,10 +51,25 @@ contract("FyiToken", accounts => {
         assert.equal(web3.utils.fromWei(sale.toString()),'0.999999999999999999', 'prices should be equal');
     })
     it('Should allow to mint tokens by sending native coins', async () => {
-        //todo
+        const initialBalance = await fyiTokenInstance.balanceOf(accounts[1]);
+        assert.equal(initialBalance.toString(), "0", "Balance did not match expected");
+        const initalReserveBalance = new BN(await web3.eth.getBalance(await fyiTokenInstance.address));
+        const amount = new BN(web3.utils.toWei('1', 'ether'));
+        const tx = await fyiTokenInstance.mint({value:amount, from:accounts[1]});
+        
+        const finalReserveBalance = new BN(await web3.eth.getBalance(await fyiTokenInstance.address));
+        const finalBalance = new BN(await fyiTokenInstance.balanceOf(accounts[1]));
+        assert.equal(initalReserveBalance.add(amount).toString(), finalReserveBalance.toString(), "Reserve balance did not match expected")
+        assert.notEqual(initialBalance.toString(), finalBalance.toString(), "Token balance should change");
     })
   
     it('Should allow to burn tokens and recieve eth in return', async () => {
-        //todo
+        const initialBalance = await fyiTokenInstance.balanceOf(accounts[1]);
+        const tx = await fyiTokenInstance.burn(initialBalance, {from:accounts[1]});
+        
+        const finalReserveBalance = new BN(await web3.eth.getBalance(await fyiTokenInstance.address));
+        const finalBalance = new BN(await fyiTokenInstance.balanceOf(accounts[1]));
+        assert.equal("2", finalReserveBalance.toString(), "Reserve balance did not match expected"); // 2 is a remainder and is close enough to zero
+        assert.notEqual(initialBalance.toString(), finalBalance.toString(), "Token balance should change");
     })
 })
