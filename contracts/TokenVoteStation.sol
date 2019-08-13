@@ -1,16 +1,18 @@
 pragma solidity ^0.5.8;
 
+import "./Token/IERC20.sol";
 import "./BaseVoteStation.sol";
 import "./Utils/Timed.sol";
 import "./Utils/Restricted.sol";
 import "./Utils/Ownable.sol";
 
 /**
- * @dev Class for starting polls, voting on polls, and finishing polls
+ * @dev Class for starting and ending governance votes
  *
  * Inherits behaviours of {Timed} and {Restricted} classes
  */
-contract VoteStation is BaseVoteStation {
+contract TokenVoteStation is BaseVoteStation {
+    IERC20 public token;
     uint  private  VOTE_DURATION;
     mapping(uint=>VoteData)  private  voteDataMap; // maps voteId to VoteData
     uint  private  voteCount = 0;
@@ -24,8 +26,9 @@ contract VoteStation is BaseVoteStation {
     /**
      * @dev Initialized with value for length of poll duration
      */
-    constructor (uint _voteDuration) public {
+    constructor (uint _voteDuration, address _token) public {
         VOTE_DURATION = _voteDuration;
+        token = IERC20(_token);
     }
 
     /**
@@ -64,16 +67,16 @@ contract VoteStation is BaseVoteStation {
         onlyAllowed()
         onlyBefore(voteDataMap[_voteId].startTime+VOTE_DURATION)
     {
-        require(_amount==msg.value, "Amount parameter did not match sent value");
         VoteData storage data = voteDataMap[_voteId];
         require(data.startTime != 0, "Invalid vote id");
         require(data.lockedAmounts[_voter]==0, "Already voted");
-        data.lockedAmounts[_voter] += msg.value;
+        require(token.transferFrom(_voter, address(this), _amount), "Unable to transfer token");
+        data.lockedAmounts[_voter] += _amount;
         if(voteFor){
-            data.forTotal += msg.value;
+            data.forTotal += _amount;
             data.votedFor[_voter] = true;
         }else{
-            data.againstTotal += msg.value;
+            data.againstTotal += _amount;
             data.votedFor[_voter] = false;
         }
         emit Vote(_voteId, voteFor, _voter);
@@ -97,7 +100,7 @@ contract VoteStation is BaseVoteStation {
         require(data.startTime != 0, "Invalid vote id");
         uint amount = data.lockedAmounts[_voter];
         data.lockedAmounts[_voter] = 0;
-        _voter.transfer(amount);
+        token.transfer(_voter, amount);
         emit VoteRefund(_voteId, _voter);
     }
     /**
@@ -151,6 +154,13 @@ contract VoteStation is BaseVoteStation {
             }
         }
         lockedAmount = data.lockedAmounts[_voter];
+    }
+
+    /**
+     * @dev Returns token contract address
+     */
+    function getTokenContractAddress() public view returns(address tokenContractAddress){
+        tokenContractAddress = address(token);
     }
 
     /**

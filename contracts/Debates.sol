@@ -73,7 +73,7 @@ contract Debates is BaseTCR {
         VoteStation voteStation = VoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_DEBATES"));
         Debate storage debate = debatesMap[_id];
         require(debate.stake>0, "Invalid debate id");
-        voteStation.vote.value(msg.value)(_id, _vote, msg.sender);
+        voteStation.vote.value(msg.value)(_id, _vote, msg.sender, msg.value);
         debate.voterLockedAmounts[msg.sender] = msg.value;
         emit DebateVote(_id, _vote, msg.sender);
     }

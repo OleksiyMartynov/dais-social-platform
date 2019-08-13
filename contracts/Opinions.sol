@@ -90,7 +90,7 @@ contract Opinions is BaseTCR  {
         VoteStation voteStation = VoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_OPINIONS"));
         Opinion storage opinion = opinionsMap[_id];
         require(opinion.debateId != 0, "Invalid opinion id");
-        voteStation.vote.value(msg.value)(_id, _vote, msg.sender);
+        voteStation.vote.value(msg.value)(_id, _vote, msg.sender, msg.value);
         opinion.voterLockedAmounts[msg.sender] = msg.value;
         emit OpinionVote(_id, _vote, msg.sender);
     }
