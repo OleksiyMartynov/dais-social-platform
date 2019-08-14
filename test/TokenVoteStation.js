@@ -84,7 +84,7 @@ contract("TokenVoteStation", accounts => {
     it("should not allow votes if unauthorized address", async () => {
         let failed = false;
         try {
-            let tx1 = await meta.vote(1, MOCK_VOTER_1_FOR, MOCK_VOTER_1, MOCK_VOTER_1_VOTES, { from: MOCK_UNAUTHARIZED_CONTRACT_ADDRESS, value: MOCK_VOTER_1_VOTES });
+            let tx1 = await meta.vote(1, MOCK_VOTER_1_FOR, MOCK_VOTER_1, MOCK_VOTER_1_VOTES, { from: MOCK_UNAUTHARIZED_CONTRACT_ADDRESS});
         } catch (ex) {
             failed = true;
         }
@@ -94,11 +94,11 @@ contract("TokenVoteStation", accounts => {
     it("should allow votes before vote end time", async () => {
         for (let i = 0; i < MOCK_VOTERS.length; i++) {
             let voteContractAddress = await meta.address;
-            //todo: refactor to token balances
-            let initialBalance = new BN(await web3.eth.getBalance(voteContractAddress));
-            let tx = await meta.vote(1, MOCK_VOTERS_FOR[i], MOCK_VOTERS[i], MOCK_VOTER_VOTES[i], { value: MOCK_VOTER_VOTES[i] });
+            let initialBalance = new BN(await fyiTokenInstance.balanceOf(voteContractAddress))
+            await fyiTokenInstance.approve(voteContractAddress, MOCK_VOTER_VOTES[i]);
+            let tx = await meta.vote(1, MOCK_VOTERS_FOR[i], MOCK_VOTERS[i], MOCK_VOTER_VOTES[i]);
             assert(tx.receipt.status, "transaction failed");
-            let finalBalance = new BN(await web3.eth.getBalance(voteContractAddress));
+            let finalBalance = new BN(await fyiTokenInstance.balanceOf(voteContractAddress))
             let total = initialBalance.add(new BN(MOCK_VOTER_VOTES[i]));
             assert.equal(finalBalance.toString(),
                 total.toString(),
@@ -107,7 +107,6 @@ contract("TokenVoteStation", accounts => {
     })
     it("should return correct general vote details during voting period", async () => {
         for (let i = 0; i > MOCK_VOTERS.length; i++) {
-
             let details = await meta.getVoteDetail(1);
             const { startTime, endTime, ongoing, majorityAccepted, forTotal, againstTotal } = details;
             const now = Date.now() / 1000;
@@ -118,7 +117,7 @@ contract("TokenVoteStation", accounts => {
             assert.equal(againstTotal, 0, "always false untill endtime");
         }
     })
-    it("should return correct user vote details during voting period", async () => {
+    it("should return correct user voter details during voting period", async () => {
         for (let i = 0; i > MOCK_VOTERS.length; i++) {
 
             let details = await meta.getVoterDetail(1, MOCK_VOTERS[i]);
@@ -139,7 +138,8 @@ contract("TokenVoteStation", accounts => {
         for (let i = 0; i > MOCK_VOTERS.length; i++) {
             let failed = false;
             try {
-                let tx1 = await meta.vote(1, MOCK_VOTERS_FOR[i], MOCK_VOTERS[i], MOCK_VOTER_VOTES[i], { value: MOCK_VOTER_VOTES[i] });
+                await fyiTokenInstance.approve(voteContractAddress, MOCK_VOTER_VOTES[i]);
+                let tx1 = await meta.vote(1, MOCK_VOTERS_FOR[i], MOCK_VOTERS[i], MOCK_VOTER_VOTES[i]);
             } catch (ex) {
                 failed = true;
             }
@@ -160,10 +160,10 @@ contract("TokenVoteStation", accounts => {
     it("should not allow votes after vote end time", async () => {
         console.log("\x1b[2m", "   ⏳ waiting for vote period end ")
         await waitFor(VOTE_DURATION * 1000 + 2000);
-
         for (let i = 0; i < MOCK_VOTERS.length; i++) {
             try {
-                let tx = await meta.vote(1, MOCK_VOTERS_FOR[i], MOCK_VOTERS[i], MOCK_VOTER_VOTES[i], { value: MOCK_VOTER_VOTES[i] });
+                await fyiTokenInstance.approve(voteContractAddress, MOCK_VOTER_VOTES[i]);
+                let tx = await meta.vote(1, MOCK_VOTERS_FOR[i], MOCK_VOTERS[i], MOCK_VOTER_VOTES[i]);
             } catch (ex) {
                 continue;
             }
@@ -206,21 +206,19 @@ contract("TokenVoteStation", accounts => {
         }
     })
     it("should return locked funds after vote end time", async () => {
-        //todo: refactor to token balances
         for (let i = 0; i < MOCK_VOTERS.length; i++) {
-            let initialBalance = new BN(await web3.eth.getBalance(MOCK_VOTERS[i]));
+            let initialBalance = new BN(await fyiTokenInstance.balanceOf(MOCK_VOTERS[i]));
             let tx = await meta.returnFunds(1, MOCK_VOTERS[i]);
-            let finalBalance = new BN(await web3.eth.getBalance(MOCK_VOTERS[i]));
-            //assert.equal(initialBalance.add(new BN(MOCK_VOTER_VOTES[i])).toString(), finalBalance.toString(), "should have transfered locked amounts");
-            assert(true,"todo");
+            let finalBalance = new BN(await fyiTokenInstance.balanceOf(MOCK_VOTERS[i]));
+            assert.equal(initialBalance.add(new BN(MOCK_VOTER_VOTES[i])).toString(), finalBalance.toString(), "should have transfered locked token amounts");
         }
     })
     it("should not return locked funds if already returned", async () => {
         //todo: refactor to token balances
         for (let i = 0; i < MOCK_VOTERS.length; i++) {
-            let initialBalance = new BN(await web3.eth.getBalance(MOCK_VOTERS[i]));
+            let initialBalance = new BN(await fyiTokenInstance.balanceOf(MOCK_VOTERS[i]));
             let tx = await meta.returnFunds(1, MOCK_VOTERS[i]);
-            let finalBalance = new BN(await web3.eth.getBalance(MOCK_VOTERS[i]));
+            let finalBalance = new BN(await fyiTokenInstance.balanceOf(MOCK_VOTERS[i]));
             assert.equal(initialBalance.toString(), finalBalance.toString(), "should have not transfered any amounts");
         }
     })

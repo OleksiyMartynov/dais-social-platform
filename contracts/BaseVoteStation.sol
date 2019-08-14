@@ -61,12 +61,12 @@ contract BaseVoteStation is Timed, Restricted, Priced, Liability {
             VoteData storage data = voteDataMap[_voteId];
             require(data.startTime != 0, "Invalid vote id");
             require(data.lockedAmounts[_voter]==0, "Already voted");
-            data.lockedAmounts[_voter] += msg.value;
+            data.lockedAmounts[_voter] += _amount;
             if(voteFor){
-                data.forTotal += msg.value;
+                data.forTotal += _amount;
                 data.votedFor[_voter] = true;
             }else{
-                data.againstTotal += msg.value;
+                data.againstTotal += _amount;
                 data.votedFor[_voter] = false;
             }
             emit Vote(_voteId, voteFor, _voter);
