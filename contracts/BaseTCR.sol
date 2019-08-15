@@ -3,12 +3,14 @@ pragma solidity ^0.5.8;
 import "./VoteStation.sol";
 import "./Utils/Ownable.sol";
 import "./Utils/Configurable.sol";
+import "./Utils/Priced.sol";
+import "./Utils/Liability.sol";
 /**
  * @dev Base class for implementing token curated registries that use a native token for voting.
  *
  * Inherits behaviours of {Ownable}, {Restricted}, {Configurable} classes
  */
-contract BaseTCR is Ownable, Restricted, Configurable{
+contract BaseTCR is Ownable, Restricted, Configurable, Priced, Liability{
 
     /**
      * @dev Sets the initial address of the setting contract used by TCR
