@@ -21,10 +21,6 @@ contract Government is BaseTCR {
         uint[]  rejectedIds;
         uint  pendingId;
     }
-    struct ImplementationIndexData {
-        uint id;
-        uint index;
-    }
     struct Implementation {
         string ipfsHash;
         uint stake;
