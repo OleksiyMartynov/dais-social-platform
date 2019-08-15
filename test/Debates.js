@@ -90,7 +90,7 @@ contract("Debates", accounts => {
         for (let i = 0; i < MOCK_VOTERS.length; i++) {
             let invalidId = 333 + i;
             try {
-                let tx = await meta.vote(invalidId, MOCK_VOTERS_FOR[i], { from: MOCK_VOTERS[i], value: MOCK_VOTER_VOTES[i] });
+                let tx = await meta.vote(invalidId, MOCK_VOTERS_FOR[i], MOCK_VOTER_VOTES[i], { from: MOCK_VOTERS[i], value: MOCK_VOTER_VOTES[i] });
             } catch (ex) {
                 continue;
             }
@@ -103,7 +103,7 @@ contract("Debates", accounts => {
         let transactionSuccess = false;
         for (let i = 0; i < MOCK_VOTERS.length; i++) {
             try {
-                let tx = await meta.vote(1, MOCK_VOTERS_FOR[i], { from: MOCK_VOTERS[i], value: 0 });
+                let tx = await meta.vote(1, MOCK_VOTERS_FOR[i], 0, { from: MOCK_VOTERS[i], value: 0 });
             } catch (ex) {
                 continue;
             }
@@ -118,7 +118,7 @@ contract("Debates", accounts => {
         let voteContractAddress = await settingsContractInstance.getAddressValue(KEY_ADDRESS_VOTING_DEBATES);
         for (let i = 0; i < MOCK_VOTERS.length; i++) {
             let initialBalance = new BN(await web3.eth.getBalance(voteContractAddress));
-            let tx = await meta.vote(1, MOCK_VOTERS_FOR[i], { from: MOCK_VOTERS[i], value: MOCK_VOTER_VOTES[i] });
+            let tx = await meta.vote(1, MOCK_VOTERS_FOR[i], MOCK_VOTER_VOTES[i], { from: MOCK_VOTERS[i], value: MOCK_VOTER_VOTES[i] });
             assert(tx.receipt.status, "transaction failed");
             let finalBalance = new BN(await web3.eth.getBalance(voteContractAddress));
             let contractBalanceDiff = finalBalance.sub(initialBalance);
@@ -131,7 +131,7 @@ contract("Debates", accounts => {
         for (let i = 0; i < MOCK_VOTERS.length; i++) {
             let initialBalance = new BN(await web3.eth.getBalance(voteContractAddress));
 
-            let tx = await meta.vote(2, false, { from: MOCK_VOTERS[i], value: votesAgains });
+            let tx = await meta.vote(2, false, votesAgains, { from: MOCK_VOTERS[i], value: votesAgains });
             assert(tx.receipt.status, "transaction failed");
             let finalBalance = new BN(await web3.eth.getBalance(voteContractAddress));
             let contractBalanceDiff = finalBalance.sub(initialBalance);
@@ -146,12 +146,12 @@ contract("Debates", accounts => {
         let transactionSuccess = false;
         for (let i = 0; i < MOCK_VOTERS.length; i++) {
             try {
-                let tx = await meta.vote(1, MOCK_VOTERS_FOR[i], { from: MOCK_VOTERS[i], value: MOCK_VOTER_VOTES[i] });
+                let tx = await meta.vote(1, MOCK_VOTERS_FOR[i], MOCK_VOTER_VOTES[i], { from: MOCK_VOTERS[i], value: MOCK_VOTER_VOTES[i] });
             } catch (ex) {
                 continue;
             }
             try {
-                let tx2 = await meta.vote(2, MOCK_VOTERS_FOR[i], { from: MOCK_VOTERS[i], value: MOCK_VOTER_VOTES[i] });
+                let tx2 = await meta.vote(2, MOCK_VOTERS_FOR[i], MOCK_VOTER_VOTES[i], { from: MOCK_VOTERS[i], value: MOCK_VOTER_VOTES[i] });
             } catch (ex) {
                 continue;
             }
@@ -231,12 +231,12 @@ contract("Debates", accounts => {
         let transactionSuccess = false;
         for (let i = 0; i < MOCK_VOTERS.length; i++) {
             try {
-                let tx = await meta.vote(1, MOCK_VOTERS_FOR[i], { from: MOCK_VOTERS[i], value: MOCK_VOTER_VOTES[i] });
+                let tx = await meta.vote(1, MOCK_VOTERS_FOR[i], MOCK_VOTER_VOTES[i], { from: MOCK_VOTERS[i], value: MOCK_VOTER_VOTES[i] });
             } catch (ex) {
                 continue;
             }
             try {
-                let tx2 = await meta.vote(2, MOCK_VOTERS_FOR[i], { from: MOCK_VOTERS[i], value: MOCK_VOTER_VOTES[i] });
+                let tx2 = await meta.vote(2, MOCK_VOTERS_FOR[i], MOCK_VOTER_VOTES[i], { from: MOCK_VOTERS[i], value: MOCK_VOTER_VOTES[i] });
             } catch (ex) {
                 continue;
             }

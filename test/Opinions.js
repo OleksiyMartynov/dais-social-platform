@@ -49,7 +49,7 @@ contract("Opinions", accounts => {
         console.log("\x1b[2m", "   ⏳ waiting for debate creation")
         await meta.create('0x123', ...MOCK_TAGS, { from: MOCK_DEBATE_CREATOR_1, value: MOCK_DEBATE_CREATOR_1_STAKE });
 
-        await meta.vote(1, true, { from: MOCK_DEBATE_CREATOR_1, value: 3 });
+        await meta.vote(1, true, 3,{ from: MOCK_DEBATE_CREATOR_1, value: 3 });
         await waitFor(VOTE_DURATION * 1000 + 1000);
         //await meta.settleCreatorAmounts(1);
         await meta.returnVoteFundsAndReward(1, { from: MOCK_DEBATE_CREATOR_1 });
@@ -115,7 +115,7 @@ contract("Opinions", accounts => {
         let meta = await Opinions.deployed();
         let failed = false;
         try {
-            let tx = await meta.vote(33, MOCK_VOTER_1_FOR, { from: MOCK_VOTER_1, value: MOCK_VOTER_1_VOTES });
+            let tx = await meta.vote(33, MOCK_VOTER_1_FOR, MOCK_VOTER_1_VOTES, { from: MOCK_VOTER_1, value: MOCK_VOTER_1_VOTES });
         } catch (ex) {
             failed = true;
         }
@@ -125,7 +125,7 @@ contract("Opinions", accounts => {
         let meta = await Opinions.deployed();
         let failed = false;
         try {
-            let tx = await meta.vote(2, MOCK_VOTER_1_FOR, { from: MOCK_VOTER_1, value: 0 });
+            let tx = await meta.vote(2, MOCK_VOTER_1_FOR, 0, { from: MOCK_VOTER_1, value: 0 });
         } catch (ex) {
             failed = true;
         }
@@ -136,7 +136,7 @@ contract("Opinions", accounts => {
         let contractAddress = await meta.address;
         for(let i = 0; i<MOCK_VOTERS.length; i++){
             let initialBalance = new BN(await web3.eth.getBalance(contractAddress));
-            let tx = await meta.vote(2, MOCK_VOTERS_FOR[i], { from: MOCK_VOTERS[i], value: MOCK_VOTER_VOTES[i] });
+            let tx = await meta.vote(2, MOCK_VOTERS_FOR[i], MOCK_VOTER_VOTES[i], { from: MOCK_VOTERS[i], value: MOCK_VOTER_VOTES[i] });
             let finalBalance = new BN(await web3.eth.getBalance(contractAddress));
             assert(tx.receipt.status, "transaction failed");
             assert.equal(finalBalance.toString(), initialBalance.toString(), "Invalid stake amount");
@@ -147,7 +147,7 @@ contract("Opinions", accounts => {
         let failCount = 0;
         for(let i = 0; i<MOCK_VOTERS.length; i++){
             try{
-                let tx = await meta.vote(2, MOCK_VOTERS_FOR[i], { from: MOCK_VOTERS[i], value: MOCK_VOTER_VOTES[i] });
+                let tx = await meta.vote(2, MOCK_VOTERS_FOR[i], MOCK_VOTER_VOTES[i], { from: MOCK_VOTERS[i], value: MOCK_VOTER_VOTES[i] });
             }catch(ex){
                 ++failCount;
             }
@@ -202,7 +202,7 @@ contract("Opinions", accounts => {
         let meta = await Opinions.deployed();
         let failed = false;
         try{
-            let tx = await meta.vote(2, true, { from: accounts[9], value: 10000 });
+            let tx = await meta.vote(2, true, 10000, { from: accounts[9], value: 10000 });
         }catch(ex){
             failed = true;
         }
@@ -333,7 +333,7 @@ contract("Opinions", accounts => {
         let meta = await Opinions.deployed();
         await meta.create(DEBATE_ID, "0x456", { from: MOCK_OPINION_CREATOR_2, value: MOCK_OPINION_CREATOR_2_STAKE });
         let voteAmount = 5 * Math.pow(10,6);
-        await meta.vote(3, false, { from: MOCK_VOTER_1, value: voteAmount });
+        await meta.vote(3, false, voteAmount, { from: MOCK_VOTER_1, value: voteAmount });
         console.log("\x1b[2m", "   ⏳ waiting for second opinion rejection vote")
         await waitFor(VOTE_DURATION * 1000 + 1000);
 
@@ -361,7 +361,7 @@ contract("Opinions", accounts => {
         console.log("\x1b[2m", "   ⏳ waiting for second debate creation")
         await meta.create('0x456', ...MOCK_TAGS, { from: MOCK_DEBATE_CREATOR_1, value: MOCK_DEBATE_CREATOR_1_STAKE });
         let voteAmount = 5 * Math.pow(10,6);
-        await meta.vote(4, true, { from: MOCK_DEBATE_CREATOR_1, value: voteAmount });
+        await meta.vote(4, true, voteAmount, { from: MOCK_DEBATE_CREATOR_1, value: voteAmount });
         await waitFor(VOTE_DURATION * 1000 + 1000);
         await meta.returnVoteFundsAndReward(4, { from: MOCK_DEBATE_CREATOR_1 });
         DEBATE_ID = (await meta.getAllDebateIds(true))[1].toNumber();
@@ -373,7 +373,7 @@ contract("Opinions", accounts => {
         const { creator } = details;
         let tx = await meta.create(DEBATE_ID, "0x789", { from: MOCK_OPINION_CREATOR_2, value: MOCK_OPINION_CREATOR_2_STAKE });
         let voteAmount = 5 * Math.pow(10,6);
-        await meta.vote(5, false, { from: MOCK_VOTER_1, value: voteAmount });
+        await meta.vote(5, false, voteAmount, { from: MOCK_VOTER_1, value: voteAmount });
         console.log("\x1b[2m", "   ⏳ waiting for opinion rejection vote")
         await waitFor(VOTE_DURATION * 1000 + 1000);
         let voterRewardFraction = CONTRACT_FRACTIONS.OPINION_MAJORITY_VOTER_REWARD_NUMERATOR / CONTRACT_FRACTIONS.OPINION_MAJORITY_VOTER_REWARD_DENOMINATOR;
@@ -397,14 +397,14 @@ contract("Opinions", accounts => {
         //create first oppinion and accept it
         let tx = await meta.create(DEBATE_ID, "0x101", { from: MOCK_OPINION_CREATOR_1, value: MOCK_OPINION_CREATOR_1_STAKE });
         let voteAmount = 1;
-        await meta.vote(6, true, { from: MOCK_VOTER_1, value: voteAmount });
+        await meta.vote(6, true, voteAmount, { from: MOCK_VOTER_1, value: voteAmount });
         console.log("\x1b[2m", "   ⏳ waiting for first opinion vote")
         await waitFor(VOTE_DURATION * 1000 + 2000);
         tx = await meta.returnVoteFundsAndReward(6, { from: MOCK_VOTER_1});
         //create second oppinion and accept it
         tx = await meta.create(DEBATE_ID, "0x101", { from: MOCK_OPINION_CREATOR_2, value: MOCK_OPINION_CREATOR_2_STAKE });
         voteAmount = 1;
-        await meta.vote(7, true, { from: MOCK_VOTER_1, value: voteAmount });
+        await meta.vote(7, true, voteAmount, { from: MOCK_VOTER_1, value: voteAmount });
         console.log("\x1b[2m", "   ⏳ waiting for second opinion vote")
         await waitFor(VOTE_DURATION * 1000 + 2000);
         let voterRewardFraction = CONTRACT_FRACTIONS.OPINION_MAJORITY_VOTER_REWARD_NUMERATOR / CONTRACT_FRACTIONS.OPINION_MAJORITY_VOTER_REWARD_DENOMINATOR;

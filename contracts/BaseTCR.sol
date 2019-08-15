@@ -26,7 +26,7 @@ contract BaseTCR is Ownable, Restricted, Configurable, Priced, Liability{
      *
      */
 
-    function vote(uint _voteId, bool _vote) public payable;
+    function vote(uint _voteId, bool _vote, uint _amount) public payable;
 
     /**
      * @dev Returns funds locked during vote()

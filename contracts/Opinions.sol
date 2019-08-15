@@ -85,7 +85,10 @@ contract Opinions is BaseTCR  {
      * - User must lock funds to vote
      * - `_id` must be a valid opinion id
      */
-    function vote(uint _id, bool _vote) public payable{
+    function vote(uint _id, bool _vote, uint _amount)
+        public
+        payable
+        costs(_amount){
         require(msg.value>0,"Voting requires funds to lock");
         VoteStation voteStation = VoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_OPINIONS"));
         Opinion storage opinion = opinionsMap[_id];

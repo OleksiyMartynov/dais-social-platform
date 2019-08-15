@@ -4,11 +4,11 @@ import "./VoteStation.sol";
 import "./BaseTCR.sol";
 import "./TokenVoteStation.sol";
 
-//todo: update BaseTCR to play nice with all TCR's
 contract Government is BaseTCR {
     uint private proposalCount = 0;
     uint[] private proposalIds;
     mapping(uint=>Proposal) proposalMap; //mapping of voteId to Implementation data
+    mapping(uint=>uint) implIdToProposalMap; //mapping of implementation id to proposal id
     struct Proposal {
         string ipfsHash;
         uint stake;
@@ -86,6 +86,7 @@ contract Government is BaseTCR {
         implementation.stake = _amount;
         implementation.creator = msg.sender;
         proposal.pendingId = voteId;
+        implIdToProposalMap[voteId] = _id;
         return voteId;
     }
 
@@ -105,7 +106,7 @@ contract Government is BaseTCR {
     function returnVoteFundsAndReward(uint _implementationId) public {
         TokenVoteStation voteStation = TokenVoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_GOVERNMENT"));
         voteStation.returnFunds(_implementationId, msg.sender);
-        uint proposalId = 0; //todo fetch proposal id
+        uint proposalId = implIdToProposalMap[_implementationId];
         (, , , , , bool majorityAccepted, bool isInMajority, uint forTotal, uint againstTotal) = voteStation.getVoterDetail(_implementationId, msg.sender);
         Proposal storage proposal = proposalMap[proposalId];
         require(proposal.stake>0, "Invalid debate id");

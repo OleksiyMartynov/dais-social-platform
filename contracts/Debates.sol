@@ -68,7 +68,10 @@ contract Debates is BaseTCR {
      * - votes must lock funds to vote
      * - `_id` must be a valid debate id
      */
-    function vote(uint _id, bool _vote) public payable{
+    function vote(uint _id, bool _vote, uint _amount)
+        public
+        payable
+        costs(_amount){
         require(msg.value>0,"Voting requires funds to lock");
         VoteStation voteStation = VoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_DEBATES"));
         Debate storage debate = debatesMap[_id];
