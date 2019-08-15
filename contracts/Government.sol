@@ -3,6 +3,7 @@ pragma solidity ^0.5.8;
 import "./VoteStation.sol";
 import "./BaseTCR.sol";
 import "./TokenVoteStation.sol";
+import "./Token/IERC20.sol";
 
 contract Government is BaseTCR {
     uint private proposalCount = 0;
@@ -16,7 +17,6 @@ contract Government is BaseTCR {
         mapping (address => uint) voterLockedAmounts;
         bool paidRewardOrPunishment;
         mapping(uint=>Implementation) implementationMap; //mapping of voteId to Implementation data
-        mapping(uint=>ImplementationIndexData) rejectedImplementationMap; //mapping of voteId to ImplementationIndexData
         uint[]  acceptedIds;
         uint[]  rejectedIds;
         uint  pendingId;
@@ -98,7 +98,7 @@ contract Government is BaseTCR {
         TokenVoteStation voteStation = TokenVoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_GOVERNMENT"));
         Proposal storage proposal = proposalMap[_proposalId];
         require(proposal.stake>0, "Invalid proposal id");
-        //todo: add function to vote with more tokens, now user can only vote once
+        //todo: consider adding function to vote with more tokens, now user can only vote once
         voteStation.vote(proposal.pendingId, _vote, msg.sender, _amount);
         proposal.voterLockedAmounts[msg.sender] += _amount;
     }
@@ -107,31 +107,28 @@ contract Government is BaseTCR {
         TokenVoteStation voteStation = TokenVoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_GOVERNMENT"));
         voteStation.returnFunds(_implementationId, msg.sender);
         uint proposalId = implIdToProposalMap[_implementationId];
-        (, , , , , bool majorityAccepted, bool isInMajority, uint forTotal, uint againstTotal) = voteStation.getVoterDetail(_implementationId, msg.sender);
+        (, , , , , bool majorityAccepted, , , ) = voteStation.getVoterDetail(_implementationId, msg.sender);
         Proposal storage proposal = proposalMap[proposalId];
+        Implementation storage implementation = proposal.implementationMap[_implementationId];
         require(proposal.stake>0, "Invalid debate id");
         if(proposal.paidRewardOrPunishment){//first time called
-            //update pendingId
+            proposal.pendingId = 0;
+            uint amount = implementation.stake;
             if(!majorityAccepted){
+                //add implementation to rejected list
+                proposal.rejectedIds.push(_implementationId);
                 //punish implementation creator by taking their stake and redistributing it to dev address
+                implementation.stake = 0;
+                (address(uint160(owner()))).transfer(amount);
+                IERC20(settings.getAddressValue("KEY_ADDRESS_TOKEN")).transfer(owner(), amount);
             }else{
+                //add implementation to accepted list
+                proposal.acceptedIds.push(_implementationId);
                 //send reward to implementation creator
                 //return implementation.stake
-                if(isInMajority){
-                    //add implementation to accepted list
-                }else{
-                    //add implementation to rejected list
-                }
+                uint reward = amount + proposal.stake;
+                IERC20(settings.getAddressValue("KEY_ADDRESS_TOKEN")).transfer(implementation.creator, reward);
             }
         }
-        if(!majorityAccepted){ //possibly dont need this if statement
-            // should have majority reward?
-        }else{
-            // should have majority reward?
-        }
-    }
-
-    function removeRejected(ImplementationIndexData memory item) private {
-
     }
 }
