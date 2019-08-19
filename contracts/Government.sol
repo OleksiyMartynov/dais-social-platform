@@ -4,6 +4,7 @@ import "./VoteStation.sol";
 import "./BaseTCR.sol";
 import "./TokenVoteStation.sol";
 import "./Token/IERC20.sol";
+import "./Utils/Utils.sol";
 
 contract Government is BaseTCR {
     uint private proposalCount = 0;
@@ -38,6 +39,7 @@ contract Government is BaseTCR {
         costsTokens(settings.getAddressValue("KEY_ADDRESS_TOKEN"), msg.sender, _amount)
         returns(uint){
         require(_amount>0,"Creating a proposal requires a token stake");
+        proposalCount += 1;
         Proposal storage newProposal = proposalMap[proposalCount];
         newProposal.ipfsHash = _ipfsHash;
         newProposal.stake += _amount;
@@ -45,7 +47,6 @@ contract Government is BaseTCR {
         newProposal.voterLockedAmounts[msg.sender] += _amount;
 
         proposalIds.push(proposalCount);
-        ++proposalCount;
         return proposalCount - 1;
     }
 
@@ -53,7 +54,7 @@ contract Government is BaseTCR {
         public
         costsTokens(settings.getAddressValue("KEY_ADDRESS_TOKEN"), msg.sender, _amount){
         require(_amount>0,"Adding to proposal requires a token stake");
-        require(_id < proposalCount, "Invalid proposal id");
+        require(_id > 0 && _id <= proposalCount, "Invalid proposal id");
         Proposal storage proposal = proposalMap[_id];
         proposal.stake += _amount;
         proposal.voterLockedAmounts[msg.sender] += _amount;
@@ -62,7 +63,7 @@ contract Government is BaseTCR {
     function withdrawFromProposal(uint _id, uint _amount)
         public
         paysTokens(settings.getAddressValue("KEY_ADDRESS_TOKEN"), msg.sender, proposalMap[_id].voterLockedAmounts[msg.sender]){
-        require(_id < proposalCount, "Invalid proposal id");
+        require(_id > 0 && _id <= proposalCount, "Invalid proposal id");
         Proposal storage proposal = proposalMap[_id];
         proposal.stake -= _amount;
         proposal.voterLockedAmounts[msg.sender] -= _amount;
@@ -73,7 +74,8 @@ contract Government is BaseTCR {
         payable
         costsTokens(settings.getAddressValue("KEY_ADDRESS_TOKEN"), msg.sender, _amount)
         returns(uint){
-        require(_id < proposalCount, "Invalid proposal id");
+        require(_id > 0 && _id <= proposalCount, "Invalid proposal id");
+        require(_amount>0, "Stake should be greater than 0"); //consider minimum stake amount
         TokenVoteStation voteStation = TokenVoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_GOVERNMENT"));
         uint voteId = voteStation.startVote();
         Proposal storage proposal = proposalMap[_id];
@@ -126,5 +128,41 @@ contract Government is BaseTCR {
                 IERC20(settings.getAddressValue("KEY_ADDRESS_TOKEN")).transfer(implementation.creator, reward);
             }
         }
+    }
+    function getProposalIds(uint cursor, uint pageSize)
+        public
+        view
+        returns(uint[] memory values, uint newCurrsor)
+    {
+        return Utils.getPage(proposalIds, cursor, pageSize);
+    }
+    function getProposalDetails(uint _id) public view returns (string memory ipfsHash,
+        uint stake,
+        address creator,
+        bool paidRewardOrPunishment,
+        uint  pendingId){
+            Proposal storage prop = proposalMap[_id];
+            ipfsHash = prop.ipfsHash;
+            stake = prop.stake;
+            creator = prop.creator;
+            paidRewardOrPunishment = prop.paidRewardOrPunishment;
+            pendingId = prop.pendingId;
+    }
+    function getAcceptedDebateIds(uint _id, uint cursor, uint pageSize)
+        public
+        view
+        returns(uint[] memory values, uint newCurrsor)
+    {
+        Proposal storage prop = proposalMap[_id];
+        return Utils.getPage(prop.acceptedIds, cursor, pageSize);
+    }
+
+    function getRejectedDebateIds(uint _id, uint cursor, uint pageSize)
+        public
+        view
+        returns(uint[] memory values, uint newCurrsor)
+    {
+        Proposal storage prop = proposalMap[_id];
+        return Utils.getPage(prop.rejectedIds, cursor, pageSize);
     }
 }
