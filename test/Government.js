@@ -12,12 +12,18 @@ contract("Government", accounts => {
     const MOCK_PROPOSAL_1_REWARD = 2 * Math.pow(10, 6);
 
     const MOCK_IMPL_CREATOR_1 = accounts[2];
-    const MOCK_IMPL_1_STAKE = 1 * Math.pow(10, 5);;
+    const MOCK_IMPL_1_STAKE = 1 * Math.pow(10, 5);
 
-    const MOCK_VOTER_1 = accounts[3];
-    const MOCK_VOTER_2 = accounts[4];
-    const MOCK_VOTER_3 = accounts[5];
-    const MOCK_VOTER_4 = accounts[6];
+    const MOCK_PROPOSAL_CREATOR_2 = accounts[3];
+    const MOCK_PROPOSAL_2_REWARD = 3 * Math.pow(10, 6);
+
+    const MOCK_IMPL_CREATOR_2 = accounts[4];
+    const MOCK_IMPL_2_STAKE = 1 * Math.pow(10, 5);
+
+    const MOCK_VOTER_1 = accounts[5];
+    const MOCK_VOTER_2 = accounts[6];
+    const MOCK_VOTER_3 = accounts[7];
+    const MOCK_VOTER_4 = accounts[8];
 
     const MOCK_VOTERS = [MOCK_VOTER_1,
         MOCK_VOTER_2,
@@ -216,13 +222,31 @@ contract("Government", accounts => {
         assert.equal(acceptedImplData.values[0].toString(), "1", "Invalid accepted impl id");
     });
     it("should be able to add another proposal", async () => {
-
+        await fyiTokenInstance.approve(await govInstance.address, MOCK_PROPOSAL_2_REWARD, { from: MOCK_PROPOSAL_CREATOR_2 })
+        let tx = await govInstance.createProposal("0x2", MOCK_PROPOSAL_2_REWARD, { from: MOCK_PROPOSAL_CREATOR_2 });
+        assert(tx.receipt.status, "transaction 2 failed");
+        let proposalIds = await govInstance.getProposalIds(0, 10);
+        assert.equal(proposalIds[1].toString(), "2", "did not get expected id");
     })
     it("should be able to create implementation", async () => {
+        await fyiTokenInstance.approve(await govInstance.address, MOCK_IMPL_2_STAKE, { from: MOCK_IMPL_CREATOR_2 });
+        await govInstance.createImplementation("0x3", 2, MOCK_IMPL_2_STAKE, { from: MOCK_IMPL_CREATOR_2 });
+        let details = await govInstance.getProposalDetails(2);
+        const { pendingId } = details;
 
+        assert.equal(pendingId.toString(), "2", "pending id did not match expected");
+        let implDetails = await govInstance.getImplementationDetails(2);
+        const { ipfsHash, stake, creator, paidBackStake } = implDetails;
+        assert.equal(ipfsHash, "0x3", "ipfs hashes did not match");
+        assert.equal(stake, MOCK_IMPL_2_STAKE, "stakes did not match");
+        assert.equal(creator, MOCK_IMPL_CREATOR_2, "creators did not match");
+        assert.equal(paidBackStake, false, "should be false at this stage");
     })
     it("should be able to add more reward to proposal", async () => {
-        
+        //todo test addToProposal()
+    })
+    it("should be able to withdraw reward from proposal", async () => {
+        //todo test withdrawFromProposal()
     })
     it("should be able to vote before end time", async () => {
         //vote to reject
@@ -240,6 +264,6 @@ contract("Government", accounts => {
         //vote to accept
     })
     it("should return locked funds after vote end", async () => {
-        
+
     })
 })

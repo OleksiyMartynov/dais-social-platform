@@ -6,6 +6,11 @@ import "./TokenVoteStation.sol";
 import "./Token/IERC20.sol";
 import "./Utils/Utils.sol";
 
+/**
+ * @dev Class for adding feature proposals to Government TCR.
+ * Government TCR can grow indefinitely as the token holders approve feature implemention proposals
+ * Inherits behaviours from {BaseTCR}
+ */
 contract Government is BaseTCR {
     uint private proposalCount = 0;
     uint[] private proposalIds;
@@ -32,7 +37,12 @@ contract Government is BaseTCR {
      * @dev Sets the address of the settings contract
      */
     constructor (address _settingsContract) BaseTCR(_settingsContract) public {}
-
+    /**
+     * @dev Starts voting period for feature proposal
+     *
+     * Restrictions:
+     * - creator must provide a token stake (reward)
+     */
     function createProposal(string memory _ipfsHash, uint _amount)
         public
         payable
@@ -49,22 +59,34 @@ contract Government is BaseTCR {
         proposalIds.push(proposalCount);
         return proposalCount - 1;
     }
-
+    /**
+     * @dev Increases reward amount for proposal implementation
+     *
+     * Restrictions:
+     * - caller must provide a token stake (reward)
+     */
     function addToProposal(uint _id, uint _amount)
         public
         costsTokens(settings.getAddressValue("KEY_ADDRESS_TOKEN"), msg.sender, _amount){
         require(_amount>0,"Adding to proposal requires a token stake");
         require(_id > 0 && _id <= proposalCount, "Invalid proposal id");
         Proposal storage proposal = proposalMap[_id];
+        require(proposal.pendingId==0, "Cannot add during the vote period");
         proposal.stake += _amount;
         proposal.voterLockedAmounts[msg.sender] += _amount;
     }
-
+    /**
+     * @dev Increases reward amount for proposal implementation
+     *
+     * Restrictions:
+     * - caller must provide a token stake (reward)
+     */
     function withdrawFromProposal(uint _id, uint _amount)
         public
         paysTokens(settings.getAddressValue("KEY_ADDRESS_TOKEN"), msg.sender, proposalMap[_id].voterLockedAmounts[msg.sender]){
         require(_id > 0 && _id <= proposalCount, "Invalid proposal id");
         Proposal storage proposal = proposalMap[_id];
+        require(proposal.pendingId==0, "Cannot withdraw during the vote period");
         proposal.stake -= _amount;
         proposal.voterLockedAmounts[msg.sender] -= _amount;
     }
