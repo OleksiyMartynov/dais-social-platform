@@ -160,18 +160,18 @@ contract("Government", accounts => {
         }
     });
     it("should be able to vote before end time", async () => {
-        for(let i =0; i< MOCK_VOTERS.length; i++){
+        for (let i = 0; i < MOCK_VOTERS.length; i++) {
             await fyiTokenInstance.approve(await tokenVoteStationInstance.address, MOCK_VOTER_VOTES[i], { from: MOCK_VOTERS[i] });
             let tx = await govInstance.vote(1, MOCK_VOTERS_FOR[i], MOCK_VOTER_VOTES[i], { from: MOCK_VOTERS[i] });
             assert(tx.receipt.status, "transaction failed");
         }
     });
     it("should not return locked funds before impl vote end", async () => {
-        for(let i =0; i< MOCK_VOTERS.length; i++){
+        for (let i = 0; i < MOCK_VOTERS.length; i++) {
             let failed = false;
-            try{
+            try {
                 let tx = await govInstance.returnVoteFundsAndReward(1, { from: MOCK_VOTERS[i] });
-            }catch(ex){
+            } catch (ex) {
                 failed = true;
             }
             assert(failed, "transaction should fail");
@@ -180,12 +180,12 @@ contract("Government", accounts => {
     it("should not be able to vote after vote time", async () => {
         console.log("\x1b[2m", "   ⏳ waiting for vote period end ")
         await waitFor(VOTE_DURATION * 1000 + 2000);
-        for(let i =0; i< MOCK_VOTERS.length; i++){
+        for (let i = 0; i < MOCK_VOTERS.length; i++) {
             let failed = false;
-            try{
+            try {
                 await fyiTokenInstance.approve(await tokenVoteStationInstance.address, MOCK_VOTER_VOTES[i], { from: MOCK_VOTERS[i] });
                 let tx = await govInstance.vote(1, MOCK_VOTERS_FOR[i], MOCK_VOTER_VOTES[i], { from: MOCK_VOTERS[i] });
-            }catch(ex){
+            } catch (ex) {
                 failed = true;
             }
             await fyiTokenInstance.approve(await tokenVoteStationInstance.address, 0, { from: MOCK_VOTERS[i] });
@@ -195,7 +195,7 @@ contract("Government", accounts => {
     it("should return locked funds after vote end", async () => {
         const creatorReward = MOCK_PROPOSAL_1_REWARD + MOCK_IMPL_1_STAKE;
         const initialCreatorBalance = await fyiTokenInstance.balanceOf(MOCK_IMPL_CREATOR_1);
-        for(let i =0; i< MOCK_VOTERS.length; i++){
+        for (let i = 0; i < MOCK_VOTERS.length; i++) {
             let tx = await govInstance.returnVoteFundsAndReward(1, { from: MOCK_VOTERS[i] });
             assert(tx.receipt.status, "transaction failed");
         }
@@ -210,7 +210,7 @@ contract("Government", accounts => {
     });
     it("should not return locked funds if already returned", async () => {
         const initialCreatorBalance = await fyiTokenInstance.balanceOf(MOCK_IMPL_CREATOR_1);
-        for(let i =0; i< MOCK_VOTERS.length; i++){
+        for (let i = 0; i < MOCK_VOTERS.length; i++) {
             let tx = await govInstance.returnVoteFundsAndReward(1, { from: MOCK_VOTERS[i] });
             assert(tx.receipt.status, "transaction failed");
         }
@@ -255,7 +255,7 @@ contract("Government", accounts => {
 
     })
     it("should be able to look up rejected impls", async () => {
-        
+
     })
     it("should be able to create implementation", async () => {
 
