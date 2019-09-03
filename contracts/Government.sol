@@ -90,9 +90,8 @@ contract Government is BaseTCR {
 
     function vote(uint _proposalId, bool _vote, uint _amount)
         public
-        payable
-        costsTokens(settings.getAddressValue("KEY_ADDRESS_TOKEN"), msg.sender, _amount){
-        require(msg.value>0,"Voting requires funds to lock");
+        payable {
+        require(_amount>0,"Voting requires tokens to lock");
         TokenVoteStation voteStation = TokenVoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_GOVERNMENT"));
         Proposal storage proposal = proposalMap[_proposalId];
         require(proposal.stake>0, "Invalid proposal id");
@@ -109,15 +108,15 @@ contract Government is BaseTCR {
         Proposal storage proposal = proposalMap[proposalId];
         Implementation storage implementation = proposal.implementationMap[_implementationId];
         require(proposal.stake>0, "Invalid debate id");
-        if(proposal.paidRewardOrPunishment){//first time called
+        if(!implementation.paidBackStake){//first time called
             proposal.pendingId = 0;
+            implementation.paidBackStake = true;
             uint amount = implementation.stake;
             if(!majorityAccepted){
                 //add implementation to rejected list
                 proposal.rejectedIds.push(_implementationId);
                 //punish implementation creator by taking their stake and redistributing it to dev address
                 implementation.stake = 0;
-                (address(uint160(owner()))).transfer(amount);
                 IERC20(settings.getAddressValue("KEY_ADDRESS_TOKEN")).transfer(owner(), amount);
             }else{
                 //add implementation to accepted list
@@ -136,7 +135,26 @@ contract Government is BaseTCR {
     {
         return Utils.getPage(proposalIds, cursor, pageSize);
     }
-    function getProposalDetails(uint _id) public view returns (string memory ipfsHash,
+    function getImplementationDetails(uint _implementationId)
+        public
+        view
+        returns(
+            string memory ipfsHash,
+            uint stake,
+            address creator,
+            bool paidBackStake){
+        uint proposalId = implIdToProposalMap[_implementationId];
+        Proposal storage proposal = proposalMap[proposalId];
+        Implementation storage implementation = proposal.implementationMap[_implementationId];
+        ipfsHash = implementation.ipfsHash;
+        stake = implementation.stake;
+        creator = implementation.creator;
+        paidBackStake = implementation.paidBackStake;
+    }
+    function getProposalDetails(uint _id)
+        public
+        view
+        returns (string memory ipfsHash,
         uint stake,
         address creator,
         bool paidRewardOrPunishment,
@@ -148,7 +166,7 @@ contract Government is BaseTCR {
             paidRewardOrPunishment = prop.paidRewardOrPunishment;
             pendingId = prop.pendingId;
     }
-    function getAcceptedDebateIds(uint _id, uint cursor, uint pageSize)
+    function getAcceptedImplementationIds(uint _id, uint cursor, uint pageSize)
         public
         view
         returns(uint[] memory values, uint newCurrsor)
@@ -157,7 +175,7 @@ contract Government is BaseTCR {
         return Utils.getPage(prop.acceptedIds, cursor, pageSize);
     }
 
-    function getRejectedDebateIds(uint _id, uint cursor, uint pageSize)
+    function getRejectedImplementationIds(uint _id, uint cursor, uint pageSize)
         public
         view
         returns(uint[] memory values, uint newCurrsor)

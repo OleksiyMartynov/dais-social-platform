@@ -3,6 +3,7 @@ const { waitFor, getGasCost } = require("./Utils");
 const { VOTE_DURATION, KEY_ADDRESS_VOTING_DEBATES, KEY_ADDRESS_OPINIONS, CONTRACT_FRACTIONS, TOKEN_SYMBOL, TOKEN_NAME, TOKEN_RESERVE_RATIO, } = require("../constants");
 const Government = artifacts.require("Government");
 const FyiToken = artifacts.require("FyiToken");
+const TokenVoteStation = artifacts.require("TokenVoteStation");
 const BN = web3.utils.BN;
 
 contract("Government", accounts => {
@@ -42,10 +43,12 @@ contract("Government", accounts => {
 
     let govInstance;
     let fyiTokenInstance;
+    let tokenVoteStationInstance;
 
     before(async () => {
         govInstance = await Government.deployed();
         fyiTokenInstance = await FyiToken.deployed();
+        tokenVoteStationInstance = await TokenVoteStation.deployed();
         expect(govInstance.address).to.exist;
         const amount = 10 * Math.pow(10, 18);
         for (let i = 0; i < 10; i++) {
@@ -111,6 +114,12 @@ contract("Government", accounts => {
         const { pendingId } = details;
 
         assert.equal(pendingId.toString(), "1", "pending id did not match expected");
+        let implDetails = await govInstance.getImplementationDetails(1);
+        const { ipfsHash, stake, creator, paidBackStake } = implDetails;
+        assert.equal(ipfsHash, "0x1", "ipfs hashes did not match");
+        assert.equal(stake, MOCK_IMPL_1_STAKE, "stakes did not match");
+        assert.equal(creator, MOCK_IMPL_CREATOR_1, "creators did not match");
+        assert.equal(paidBackStake, false, "should be false at this stage");
     });
     it("should not be able to vote on invalid impl id", async () => {
         await fyiTokenInstance.approve(await govInstance.address, MOCK_VOTER_1_VOTES, { from: MOCK_VOTER_1 });
@@ -145,27 +154,92 @@ contract("Government", accounts => {
         }
     });
     it("should be able to vote before end time", async () => {
-
+        for(let i =0; i< MOCK_VOTERS.length; i++){
+            await fyiTokenInstance.approve(await tokenVoteStationInstance.address, MOCK_VOTER_VOTES[i], { from: MOCK_VOTERS[i] });
+            let tx = await govInstance.vote(1, MOCK_VOTERS_FOR[i], MOCK_VOTER_VOTES[i], { from: MOCK_VOTERS[i] });
+            assert(tx.receipt.status, "transaction failed");
+        }
     });
     it("should not return locked funds before impl vote end", async () => {
-
-    });
-    it("should have correct impl details during vote period", async () => {
-
+        for(let i =0; i< MOCK_VOTERS.length; i++){
+            let failed = false;
+            try{
+                let tx = await govInstance.returnVoteFundsAndReward(1, { from: MOCK_VOTERS[i] });
+            }catch(ex){
+                failed = true;
+            }
+            assert(failed, "transaction should fail");
+        }
     });
     it("should not be able to vote after vote time", async () => {
-
+        console.log("\x1b[2m", "   ⏳ waiting for vote period end ")
+        await waitFor(VOTE_DURATION * 1000 + 2000);
+        for(let i =0; i< MOCK_VOTERS.length; i++){
+            let failed = false;
+            try{
+                await fyiTokenInstance.approve(await tokenVoteStationInstance.address, MOCK_VOTER_VOTES[i], { from: MOCK_VOTERS[i] });
+                let tx = await govInstance.vote(1, MOCK_VOTERS_FOR[i], MOCK_VOTER_VOTES[i], { from: MOCK_VOTERS[i] });
+            }catch(ex){
+                failed = true;
+            }
+            await fyiTokenInstance.approve(await tokenVoteStationInstance.address, 0, { from: MOCK_VOTERS[i] });
+            assert(failed, "transaction should fail");
+        }
     });
     it("should return locked funds after vote end", async () => {
-
-    });
-    it("should have correct impl details after vote period", async () => {
-
+        const creatorReward = MOCK_PROPOSAL_1_REWARD + MOCK_IMPL_1_STAKE;
+        const initialCreatorBalance = await fyiTokenInstance.balanceOf(MOCK_IMPL_CREATOR_1);
+        for(let i =0; i< MOCK_VOTERS.length; i++){
+            let tx = await govInstance.returnVoteFundsAndReward(1, { from: MOCK_VOTERS[i] });
+            assert(tx.receipt.status, "transaction failed");
+        }
+        let implDetails = await govInstance.getImplementationDetails(1);
+        const { ipfsHash, stake, creator, paidBackStake } = implDetails;
+        assert.equal(ipfsHash, "0x1", "ipfs hashes did not match");
+        assert.equal(stake, MOCK_IMPL_1_STAKE, "stakes did not match");
+        assert.equal(creator, MOCK_IMPL_CREATOR_1, "creators did not match");
+        assert.equal(paidBackStake, true, "should be false at this stage");
+        const finalCreatorBalance = await fyiTokenInstance.balanceOf(MOCK_IMPL_CREATOR_1);
+        assert.equal(initialCreatorBalance.add(new BN(creatorReward)).toString(), finalCreatorBalance.toString());
     });
     it("should not return locked funds if already returned", async () => {
-
+        const initialCreatorBalance = await fyiTokenInstance.balanceOf(MOCK_IMPL_CREATOR_1);
+        for(let i =0; i< MOCK_VOTERS.length; i++){
+            let tx = await govInstance.returnVoteFundsAndReward(1, { from: MOCK_VOTERS[i] });
+            assert(tx.receipt.status, "transaction failed");
+        }
+        const finalCreatorBalance = await fyiTokenInstance.balanceOf(MOCK_IMPL_CREATOR_1);
+        assert.equal(initialCreatorBalance.toString(), finalCreatorBalance.toString());
     });
-    it("should be able to look up all accepted and rejected impls", async () => {
-
+    it("should be able to look up all accepted impls", async () => {
+        let acceptedImplData = await govInstance.getAcceptedImplementationIds(1, 0, 10);
+        assert.equal(acceptedImplData.values[0].toString(), "1", "Invalid accepted impl id");
     });
+    it("should be able to add another proposal", async () => {
+
+    })
+    it("should be able to create implementation", async () => {
+
+    })
+    it("should be able to add more reward to proposal", async () => {
+        
+    })
+    it("should be able to vote before end time", async () => {
+        //vote to reject
+    })
+    it("should return locked funds after vote end", async () => {
+
+    })
+    it("should be able to look up rejected impls", async () => {
+        
+    })
+    it("should be able to create implementation", async () => {
+
+    })
+    it("should be able to vote before end time", async () => {
+        //vote to accept
+    })
+    it("should return locked funds after vote end", async () => {
+        
+    })
 })
