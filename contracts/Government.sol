@@ -83,10 +83,12 @@ contract Government is BaseTCR {
      */
     function withdrawFromProposal(uint _id, uint _amount)
         public
-        paysTokens(settings.getAddressValue("KEY_ADDRESS_TOKEN"), msg.sender, proposalMap[_id].voterLockedAmounts[msg.sender]){
+        paysTokens(settings.getAddressValue("KEY_ADDRESS_TOKEN"), msg.sender, _amount){
         require(_id > 0 && _id <= proposalCount, "Invalid proposal id");
         Proposal storage proposal = proposalMap[_id];
         require(proposal.pendingId==0, "Cannot withdraw during the vote period");
+        uint totalLocked = proposal.voterLockedAmounts[msg.sender];
+        require(totalLocked>=_amount, "Cannot withdraw more than deposited");
         proposal.stake -= _amount;
         proposal.voterLockedAmounts[msg.sender] -= _amount;
     }
@@ -101,6 +103,7 @@ contract Government is BaseTCR {
         TokenVoteStation voteStation = TokenVoteStation(settings.getAddressValue("KEY_ADDRESS_VOTING_GOVERNMENT"));
         uint voteId = voteStation.startVote();
         Proposal storage proposal = proposalMap[_id];
+        require(proposal.acceptedIds.length==0,"Implementation has already been accepted for this proposal");
         Implementation storage implementation = proposal.implementationMap[voteId];
         implementation.ipfsHash = _ipfsHash;
         implementation.stake = _amount;
