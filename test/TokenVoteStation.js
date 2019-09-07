@@ -214,7 +214,6 @@ contract("TokenVoteStation", accounts => {
         }
     })
     it("should not return locked funds if already returned", async () => {
-        //todo: refactor to token balances
         for (let i = 0; i < MOCK_VOTERS.length; i++) {
             let initialBalance = new BN(await fyiTokenInstance.balanceOf(MOCK_VOTERS[i]));
             let tx = await meta.returnFunds(1, MOCK_VOTERS[i]);

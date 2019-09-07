@@ -248,7 +248,6 @@ contract("Debates", accounts => {
         let meta = await Debates.deployed();
         let voteContract = await VoteStation.deployed();
         let rewardFraction = CONTRACT_FRACTIONS.DEBATE_MAJORITY_VOTER_REWARD_NUMERATOR / CONTRACT_FRACTIONS.DEBATE_MAJORITY_VOTER_REWARD_DENOMINATOR;
-        //todo: test independently
         //await meta.settleCreatorAmounts(1);
         for (let i = 0; i < MOCK_VOTERS.length; i++) {
             let initialBalance = new BN(await web3.eth.getBalance(MOCK_VOTERS[i]));

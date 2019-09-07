@@ -4,6 +4,7 @@ import "./VoteStation.sol";
 import "./BaseTCR.sol";
 import "./Utils/Utils.sol";
 import "./Tags.sol";
+import "./Math/SafeMath.sol";
 
 /**
  * @dev Class for adding user debates to the Debate TCR.
@@ -11,6 +12,8 @@ import "./Tags.sol";
  * Inherits behaviours from {BaseTCR}
  */
 contract Debates is BaseTCR {
+    using SafeMath for uint256;
+
     uint[] private  acceptedIds;
     uint[] private  rejectedIds;
     uint[] private  pendingIds;
@@ -106,7 +109,7 @@ contract Debates is BaseTCR {
             }else{
                 total = againstTotal;
             }
-            reward = debate.stake * rewardNumerator / rewardDenominator * amount / total;
+            reward = debate.stake.mul(rewardNumerator).div(rewardDenominator).mul(amount).div(total);
             msg.sender.transfer(reward);
         }
         emit DebateVoteRefund(_id, msg.sender, reward, majorityAccepted);
@@ -132,7 +135,7 @@ contract Debates is BaseTCR {
                 uint punishmentNumerator = settings.getIntValue("DEBATE_CREATOR_PUNISHMENT_NUMERATOR");
                 uint punishmentDenominator = settings.getIntValue("DEBATE_CREATOR_PUNISHMENT_DENOMINATOR");
                 rejectedIds.push(_id);
-                uint amount = debate.stake * punishmentNumerator / punishmentDenominator;
+                uint amount = debate.stake.mul(punishmentNumerator).div(punishmentDenominator);
                 (address(uint160(owner()))).transfer(amount);
                 emit DebateDevFeePaid(_id, owner(), amount);
             }else{
@@ -152,7 +155,7 @@ contract Debates is BaseTCR {
         Debate storage debate = debatesMap[_id];
         if(!debate.paidFirstOpinionCreator){
             debate.paidFirstOpinionCreator = true;
-            uint amount = debate.stake * rewardNumerator / rewardDenominator;
+            uint amount = debate.stake.mul(rewardNumerator).div(rewardDenominator);
             _creator.transfer(amount);
             emit FirstOpinionAccepted(_id, _opinionId, _creator, amount);
         }
@@ -249,12 +252,12 @@ contract Debates is BaseTCR {
      */
     function removePending(PendingDebateData memory item) private {
         require(item.index < pendingIds.length, "Invalid pending debate index");
-        uint last = pendingIds[pendingIds.length-1];
+        uint last = pendingIds[pendingIds.length.sub(1)];
         pendingIds[item.index] = last;
         pendingDebatesMap[last].index = item.index;
 
-        delete pendingIds[pendingIds.length-1];
-        pendingIds.length--;
+        delete pendingIds[pendingIds.length.sub(1)];
+        pendingIds.length = pendingIds.length.sub(1);
     }
     /**
      * @dev Emitted when a new challanging debate is created.

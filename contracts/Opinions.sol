@@ -3,6 +3,7 @@ pragma solidity ^0.5.8;
 import "./VoteStation.sol";
 import "./BaseTCR.sol";
 import "./Debates.sol";
+import "./Math/SafeMath.sol";
 
 /**
 * @dev Class for adding user opinions to the Opinion TCR
@@ -10,6 +11,8 @@ import "./Debates.sol";
 * Inherits behaviours from {BaseTCR}
 */
 contract Opinions is BaseTCR  {
+    using SafeMath for uint256;
+    
     enum OpinionState {NULL, PENDING_VOTE, VOTE_REJECTED, TOP, OLD_TOP}
     mapping(uint=>OpinionsRegistry) private  opinionsRegistryMap; //mapping of debateId to opinion registry data
     mapping(uint=>Opinion) private opinionsMap;
@@ -60,7 +63,7 @@ contract Opinions is BaseTCR  {
         if(opinionRegistry.topOpinionId==0){
             Debates debates = Debates(settings.getAddressValue("KEY_ADDRESS_DEBATES"));
             (,uint stake,,,,,) = debates.getDebateDetails(_debateId);
-            require(msg.value>stake/2, "invalid minimum stake requirements");
+            require(msg.value>stake.div(2), "invalid minimum stake requirements");
         }else{// if not first then check if msg.value is greater then topOpinion stake
             require(msg.value>opinionsMap[opinionRegistry.topOpinionId].stake, "invalid minimum stake requirements");
         }
@@ -127,7 +130,7 @@ contract Opinions is BaseTCR  {
             }else{//else if opinion is rejected the return voter locked amount
                 total = againstTotal;
             }
-            reward = opinion.stake * rewardNumerator/rewardDenominator * amount / total;
+            reward = opinion.stake.mul(rewardNumerator).div(rewardDenominator).mul(amount).div(total);
             msg.sender.transfer(reward);
         }
         emit OpinionVoteRefund(_id, msg.sender, reward, isInMajority);
@@ -175,7 +178,7 @@ contract Opinions is BaseTCR  {
                     //opinion.creator.transfer(stake * rewardNumerator / rewardDenominator);
                     loserStake = stake;
                 }else{
-                    uint amount = prevTopOpinion.stake * rewardNumerator / rewardDenominator;
+                    uint amount = prevTopOpinion.stake.mul(rewardNumerator).div(rewardDenominator);
                     opinion.creator.transfer(amount);
                     loserStake = prevTopOpinion.stake;
                     emit OpinionCreatorRewardedPunished(opinion.debateId, _id, opinion.creator, 0, prevTopOpinion.creator, amount);
@@ -186,11 +189,11 @@ contract Opinions is BaseTCR  {
                 registry.rejectedOpinionsIds.push(_id);
                 // pay penalty
                 if(registry.topOpinionId==0){// no top opinions, therefore pay debate creator
-                    uint amount = opinion.stake * rewardNumerator / rewardDenominator;address(uint160(debateCreator));
+                    uint amount = opinion.stake.mul(rewardNumerator).div(rewardDenominator);
                     (address(uint160(debateCreator))).transfer(amount);
                     emit OpinionCreatorRewardedPunished(opinion.debateId, _id, debateCreator, 1, opinion.creator, amount);
                 }else{ // pay current top opinion creator
-                    uint amount = opinion.stake * rewardNumerator / rewardDenominator;
+                    uint amount = opinion.stake.mul(rewardNumerator).div(rewardDenominator);
                     prevTopOpinion.creator.transfer(amount);
                     emit OpinionCreatorRewardedPunished(opinion.debateId, _id, prevTopOpinion.creator, 0, opinion.creator, amount);
                 }
@@ -209,14 +212,14 @@ contract Opinions is BaseTCR  {
         uint devFeeNumerator = settings.getIntValue("OPINION_DEV_REWARD_NUMERATOR");
         uint devFeeDenominator = settings.getIntValue("OPINION_DEV_REWARD_DENOMINATOR");
         address payable owner = address(uint160(owner()));
-        uint devAmount = loserStake * devFeeNumerator / devFeeDenominator;
+        uint devAmount = loserStake.mul(devFeeNumerator).div(devFeeDenominator);
         owner.transfer(devAmount);
         emit DevFeePaid(debateId, id, owner, devAmount);
 
         uint debateCreatorRewardNumerator = settings.getIntValue("DEBATE_CREATOR_REWARD_NUMERATOR");
         uint debateCreatorRewardDenominator = settings.getIntValue("DEBATE_CREATOR_REWARD_DENOMINATOR");
         address payable payableDebateCreator = address(uint160(debateCreator));
-        uint dcAmount = prevTopOpinion.stake * debateCreatorRewardNumerator / debateCreatorRewardDenominator;
+        uint dcAmount = prevTopOpinion.stake.mul(debateCreatorRewardNumerator).div(debateCreatorRewardDenominator);
         payableDebateCreator.transfer(dcAmount);
         emit OpinionDebateCreatorFeePaid(debateId, id, debateCreator, dcAmount);
     }

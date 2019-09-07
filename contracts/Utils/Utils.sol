@@ -1,8 +1,11 @@
 pragma solidity ^0.5.8;
+
+import "../Math/SafeMath.sol";
 /**
  * @dev Library class providing various utility functions
  */
 library Utils {
+    using SafeMath for uint256;
     /**
      * @dev Splits int[] `array` into pages with offset of `cursor` and length of `pageSize`
      *
@@ -15,16 +18,16 @@ library Utils {
         returns(uint[] memory values, uint newCurrsor)
     {
         uint length = pageSize;
-        if (length > array.length - cursor) {
-            length = array.length - cursor;
+        if (length > array.length.sub(cursor)) {
+            length = array.length.sub(cursor);
         }
 
         values = new uint[](length);
         for (uint256 i = 0; i < length; i++) {
-            values[i] = array[cursor + i];
+            values[i] = array[cursor.add(i)];
         }
 
-        return (values, cursor + length);
+        return (values, cursor.add(length));
     }
     /**
      * @dev Splits string[] `array` into pages with offset of `cursor` and length of `pageSize`
@@ -38,13 +41,13 @@ library Utils {
         returns(string[] memory values, uint newCurrsor)
     {
         uint length = pageSize;
-        if (length > array.length - cursor) {
-            length = array.length - cursor;
+        if (length > array.length.sub(cursor)) {
+            length = array.length.sub(cursor);
         }
 
         values = new string[](length);
         for (uint256 i = 0; i < length; i++) {
-            values[i] = array[cursor + i];
+            values[i] = array[cursor.add(i)];
         }
 
         return (values, cursor + length);

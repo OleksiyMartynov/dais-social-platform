@@ -5,6 +5,7 @@ import "./BaseTCR.sol";
 import "./TokenVoteStation.sol";
 import "./Token/IERC20.sol";
 import "./Utils/Utils.sol";
+import "./Math/SafeMath.sol";
 
 /**
  * @dev Class for adding feature proposals to Government TCR.
@@ -12,6 +13,8 @@ import "./Utils/Utils.sol";
  * Inherits behaviours from {BaseTCR}
  */
 contract Government is BaseTCR {
+    using SafeMath for uint256;
+
     uint private proposalCount = 0;
     uint[] private proposalIds;
     mapping(uint=>Proposal) proposalMap; //mapping of voteId to Implementation data
@@ -49,15 +52,15 @@ contract Government is BaseTCR {
         costsTokens(settings.getAddressValue("KEY_ADDRESS_TOKEN"), msg.sender, _amount)
         returns(uint){
         require(_amount>0,"Creating a proposal requires a token stake");
-        proposalCount += 1;
+        proposalCount = proposalCount.add(1);
         Proposal storage newProposal = proposalMap[proposalCount];
         newProposal.ipfsHash = _ipfsHash;
-        newProposal.stake += _amount;
+        newProposal.stake = newProposal.stake.add(_amount);
         newProposal.creator = msg.sender;
-        newProposal.voterLockedAmounts[msg.sender] += _amount;
+        newProposal.voterLockedAmounts[msg.sender] = newProposal.voterLockedAmounts[msg.sender].add(_amount);
 
         proposalIds.push(proposalCount);
-        return proposalCount - 1;
+        return proposalCount.sub(1);
     }
     /**
      * @dev Increases reward amount for proposal implementation
@@ -72,8 +75,8 @@ contract Government is BaseTCR {
         require(_id > 0 && _id <= proposalCount, "Invalid proposal id");
         Proposal storage proposal = proposalMap[_id];
         require(proposal.pendingId==0, "Cannot add during the vote period");
-        proposal.stake += _amount;
-        proposal.voterLockedAmounts[msg.sender] += _amount;
+        proposal.stake = proposal.stake.add(_amount);
+        proposal.voterLockedAmounts[msg.sender] = proposal.voterLockedAmounts[msg.sender].add(_amount);
     }
     /**
      * @dev Increases reward amount for proposal implementation
@@ -89,8 +92,8 @@ contract Government is BaseTCR {
         require(proposal.pendingId==0, "Cannot withdraw during the vote period");
         uint totalLocked = proposal.voterLockedAmounts[msg.sender];
         require(totalLocked>=_amount, "Cannot withdraw more than deposited");
-        proposal.stake -= _amount;
-        proposal.voterLockedAmounts[msg.sender] -= _amount;
+        proposal.stake = proposal.stake.sub(_amount);
+        proposal.voterLockedAmounts[msg.sender] = proposal.voterLockedAmounts[msg.sender].sub(_amount);
     }
 
     function createImplementation(string memory _ipfsHash, uint _id, uint _amount)
@@ -122,7 +125,7 @@ contract Government is BaseTCR {
         require(proposal.stake>0, "Invalid proposal id");
         //todo: consider adding function to vote with more tokens, now user can only vote once
         voteStation.vote(proposal.pendingId, _vote, msg.sender, _amount);
-        proposal.voterLockedAmounts[msg.sender] += _amount;
+        proposal.voterLockedAmounts[msg.sender] = proposal.voterLockedAmounts[msg.sender].add(_amount);
     }
 
     function returnVoteFundsAndReward(uint _implementationId) public {
@@ -148,7 +151,7 @@ contract Government is BaseTCR {
                 proposal.acceptedIds.push(_implementationId);
                 //send reward to implementation creator
                 //return implementation.stake
-                uint reward = amount + proposal.stake;
+                uint reward = amount.add(proposal.stake);
                 IERC20(settings.getAddressValue("KEY_ADDRESS_TOKEN")).transfer(implementation.creator, reward);
             }
         }

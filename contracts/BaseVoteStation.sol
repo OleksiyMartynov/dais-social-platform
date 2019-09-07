@@ -3,6 +3,7 @@ import "./Utils/Timed.sol";
 import "./Utils/Restricted.sol";
 import "./Utils/Priced.sol";
 import "./Utils/Liability.sol";
+import "./Math/SafeMath.sol";
 
 /**
  * @dev Class for starting polls, voting on polls, and finishing polls
@@ -10,6 +11,8 @@ import "./Utils/Liability.sol";
  * Inherits behaviours of {Timed} and {Restricted} classes
  */
 contract BaseVoteStation is Timed, Restricted, Priced, Liability {
+    using SafeMath for uint256;
+
     uint  private  VOTE_DURATION;
     mapping(uint=>VoteData)  internal  voteDataMap; // maps voteId to VoteData
     uint  private  voteCount = 0;
@@ -36,7 +39,7 @@ contract BaseVoteStation is Timed, Restricted, Priced, Liability {
         payable
         onlyAllowed()
         returns (uint){
-            voteCount += 1;
+            voteCount = voteCount.add(1);
             VoteData storage data = voteDataMap[voteCount];
             data.startTime = block.timestamp;
             emit VotingStarted(voteCount);
@@ -57,16 +60,16 @@ contract BaseVoteStation is Timed, Restricted, Priced, Liability {
         public
         payable
         onlyAllowed()
-        onlyBefore(voteDataMap[_voteId].startTime+VOTE_DURATION){
+        onlyBefore(voteDataMap[_voteId].startTime.add(VOTE_DURATION)){
             VoteData storage data = voteDataMap[_voteId];
             require(data.startTime != 0, "Invalid vote id");
             require(data.lockedAmounts[_voter]==0, "Already voted");
-            data.lockedAmounts[_voter] += _amount;
+            data.lockedAmounts[_voter] = data.lockedAmounts[_voter].add(_amount);
             if(voteFor){
-                data.forTotal += _amount;
+                data.forTotal = data.forTotal.add(_amount);
                 data.votedFor[_voter] = true;
             }else{
-                data.againstTotal += _amount;
+                data.againstTotal = data.againstTotal.add(_amount);
                 data.votedFor[_voter] = false;
             }
             emit Vote(_voteId, voteFor, _voter);
@@ -84,7 +87,7 @@ contract BaseVoteStation is Timed, Restricted, Priced, Liability {
     function returnFunds(uint _voteId, address payable _voter)
         public
         onlyAllowed()
-        onlyAfter(voteDataMap[_voteId].startTime+VOTE_DURATION){
+        onlyAfter(voteDataMap[_voteId].startTime.add(VOTE_DURATION)){
             VoteData storage data = voteDataMap[_voteId];
             require(data.startTime != 0, "Invalid vote id");
             data.lockedAmounts[_voter] = 0;
@@ -105,9 +108,9 @@ contract BaseVoteStation is Timed, Restricted, Priced, Liability {
     {
         VoteData storage data = voteDataMap[_voteId];
         startTime = data.startTime;
-        endTime = data.startTime+VOTE_DURATION;
-        ongoing = now < data.startTime + VOTE_DURATION;
-        if(now > data.startTime + VOTE_DURATION){ //only reveal the result after end time
+        endTime = data.startTime.add(VOTE_DURATION);
+        ongoing = now < data.startTime.add(VOTE_DURATION);
+        if(now > data.startTime.add(VOTE_DURATION)){ //only reveal the result after end time
             majorityAccepted = data.forTotal>data.againstTotal;
             forTotal = data.forTotal;
             againstTotal = data.againstTotal;
@@ -133,7 +136,7 @@ contract BaseVoteStation is Timed, Restricted, Priced, Liability {
         VoteData storage data = voteDataMap[_voteId];
         votedFor = data.votedFor[_voter];
         (startTime, endTime, ongoing, majorityAccepted, forTotal, againstTotal) = getVoteDetail(_voteId);
-        if(now > data.startTime + VOTE_DURATION){ //only reveal the result after end time
+        if(now > data.startTime.add(VOTE_DURATION)){ //only reveal the result after end time
             forTotal = data.forTotal;
             againstTotal = data.againstTotal;
             if((majorityAccepted && votedFor) || (!majorityAccepted && !votedFor)){
